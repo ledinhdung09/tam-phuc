@@ -1,0 +1,26 @@
+body {
+  font-family: Arial, sans-serif !important;
+}
+
+/* Ghi đè font chữ của các thành phần Ant Design */
+.ant-typography,
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-modal,
+.ant-layout {
+  font-family: Arial, sans-serif;
+}
+
+.custom-form-item {
+  margin: 0px !important;
+}
+.ant-modal {
+  right: 15%;
+  top: 32%;
+}
+
+.custom-confirm-modal > .ant-modal {
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
