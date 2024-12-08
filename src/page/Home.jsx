@@ -11,10 +11,14 @@ function Home() {
   const fetchData = async () => {
     const token = localStorage.getItem("authToken");
     try {
-      const res = await getDataOrdersAPI(token, 1, 10);
+      const res = await getDataOrdersAPI(token, 1, 1000);
       const orders = res.data.data;
 
-      const transformedData = orders.map((item) => ({
+      // Lọc bỏ các đơn hàng có order_status === "6"
+      const filteredOrders = orders.filter((item) => item.order_status !== "6");
+
+      // Chuyển đổi dữ liệu để phù hợp với cấu trúc bảng
+      const transformedData = filteredOrders.map((item) => ({
         key: item.order_id,
         id: item.order_id,
         revenue: item.total,
@@ -28,9 +32,17 @@ function Home() {
             ? "Đang in"
             : item.order_status === "3"
             ? "Đã hoàn thành"
-            : "Trả hàng",
+            : item.order_status === "4"
+            ? "Trả hàng"
+            : item.order_status === "5"
+            ? "Giao hàng thất bại"
+            : item.order_status === "7"
+            ? "Đang giao"
+            : "",
         vat: "Xem hóa đơn",
       }));
+
+      // Cập nhật dữ liệu cho bảng
       setDataValue(transformedData);
     } catch (error) {
       console.log(error);
@@ -67,7 +79,10 @@ function Home() {
       render: (text) => (
         <div style={{ whiteSpace: "normal" }}>
           {text.split("  ").map((item, index) => (
-            <div key={index}>{item}</div>
+            <div key={index}>
+              {" "}
+              {new Intl.NumberFormat("vi-VN").format(item)} đ{" "}
+            </div>
           ))}
         </div>
       ),
@@ -135,6 +150,18 @@ function Home() {
           return (
             <Link to={`/tong-quan/edit-tra-hang/${record.id}`}>{text}</Link>
           );
+        } else if (record.status === "Đã xóa") {
+          return <Link to={`/tong-quan/da-xoa/${record.id}`}>{text}</Link>;
+        } else if (record.status === "Lưu nháp") {
+          return <Link to={`/tong-quan/da-luu/${record.id}`}>{text}</Link>;
+        } else if (record.status === "Giao hàng thất bại") {
+          return (
+            <Link to={`/tong-quan/giao-hang-that-bai/${record.id}`}>
+              {text}
+            </Link>
+          );
+        } else if (record.status === "Đang giao") {
+          return <Link to={`/tong-quan/dang-giao/${record.id}`}>{text}</Link>;
         }
         return text;
       },
@@ -157,7 +184,10 @@ function Home() {
         <Table
           columns={columns}
           dataSource={filterDataByStatus("all")}
-          pagination={false}
+          pagination={{
+            position: ["bottomCenter"],
+            pageSize: 15,
+          }}
         />
       ),
     },
@@ -168,7 +198,10 @@ function Home() {
         <Table
           columns={columns}
           dataSource={filterDataByStatus("Đang báo giá")}
-          pagination={false}
+          pagination={{
+            position: ["bottomCenter"],
+            pageSize: 15,
+          }}
         />
       ),
     },
@@ -179,7 +212,10 @@ function Home() {
         <Table
           columns={columns}
           dataSource={filterDataByStatus("Đang in")}
-          pagination={false}
+          pagination={{
+            position: ["bottomCenter"],
+            pageSize: 15,
+          }}
         />
       ),
     },
@@ -190,7 +226,10 @@ function Home() {
         <Table
           columns={columns}
           dataSource={filterDataByStatus("Đã hoàn thành")}
-          pagination={false}
+          pagination={{
+            position: ["bottomCenter"],
+            pageSize: 15,
+          }}
         />
       ),
     },
@@ -201,7 +240,10 @@ function Home() {
         <Table
           columns={columns}
           dataSource={filterDataByStatus("Trả hàng")}
-          pagination={false}
+          pagination={{
+            position: ["bottomCenter"],
+            pageSize: 15,
+          }}
         />
       ),
     },

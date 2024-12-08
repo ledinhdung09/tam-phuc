@@ -49,9 +49,9 @@ function AddProducts() {
       category_id: data.category_name,
       product_name: data.product_name,
       rules: data.rules,
-      notes: data.notes,
-      price: data.price,
-      plusPrice: data.plusPrice,
+      notes: data.notes !== undefined ? data.notes : "",
+      price: data.price !== undefined ? data.price : 0,
+      plusPrice: data.plusPrice !== undefined ? data.plusPrice : 0,
       pricing: [],
     };
     if (data.price == undefined) {
@@ -62,10 +62,10 @@ function AddProducts() {
     rows.forEach((_, index) => {
       if (data[`quantity_${index}`] !== undefined) {
         transformedData.pricing.push({
-          quantity: data[`quantity_${index}`],
-          price: parseFloat(data[`price_${index}`]),
-          note: data[`note_${index}`],
-          plusPrice: data[`plusPrice_${index}`],
+          quantity: data[`quantity_${index}`] || 0,
+          price: parseFloat(data[`price_${index}`]) || 0,
+          note: data[`note_${index}`] || "", // Nếu cần, bạn có thể để chuỗi rỗng ở đây
+          plusPrice: data[`plusPrice_${index}`] || 0,
         });
       } else {
         transformedData.pricing.push({
@@ -272,12 +272,12 @@ function AddProducts() {
               {rows.map((row, index) => (
                 <Row gutter={16} key={row.key} style={{ marginBottom: 16 }}>
                   <Col flex={1}>
-                    <Form.Item name={`plusPrice`} label="Đơn giá">
+                    <Form.Item name={`price`} label="Đơn giá">
                       <Input placeholder="Nhập đơn giá" />
                     </Form.Item>
                   </Col>
                   <Col flex={1}>
-                    <Form.Item name={`price`} label="Cộng thêm">
+                    <Form.Item name={`plusPrice`} label="Cộng thêm">
                       <Input placeholder="Nhập cộng thêm" />
                     </Form.Item>
                   </Col>

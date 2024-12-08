@@ -18,6 +18,7 @@ const Login = () => {
       if (response) {
         login(response.data.session_token);
         localStorage.setItem("username", response.data.username);
+        localStorage.setItem("cate_id", response.data.cate_account);
         navigate("/tong-quan", {
           state: { message: "Đăng nhập thành công!", type: "success" },
         });

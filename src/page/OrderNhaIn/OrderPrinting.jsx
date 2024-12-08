@@ -7,15 +7,20 @@ const { Content } = Layout;
 
 function OrderPrinting() {
   const [dataValue, setDataValue] = useState([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
   const fetchData = async () => {
     const token = localStorage.getItem("authToken");
     try {
-      const res = await getDataOrdersAPI(token, 1, 10);
+      const res = await getDataOrdersAPI(token, 1, 100);
       console.log(res);
       const orders = res.data.data;
 
       // Lọc các order có order_status = 2
-      const filteredOrders = orders.filter((order) => order.order_status == 1);
+      const filteredOrders = orders.filter(
+        (order) => order.order_status == 2 || order.order_status == 7
+      );
 
       const transformedData = filteredOrders.map((item) => ({
         key: item.order_id,
@@ -24,10 +29,12 @@ function OrderPrinting() {
         datetime: item.order_date,
         actprocessing_staffion: item.processing_employee,
         file_processing_design: item.design_confirm_employee,
-        status: item.status_name,
+        status: item.order_status === "2" ? "Đang in" : "Đã in xong",
         vat: "Xem hóa đơn",
       }));
       setDataValue(transformedData);
+
+      setTotalOrders(filteredOrders.length); // Sử dụng số lượng đơn hàng đã lọc
       console.log("Orders with status 2: ", filteredOrders);
     } catch (error) {
       console.log(error);
@@ -40,7 +47,6 @@ function OrderPrinting() {
 
   const location = useLocation();
   const [api, contextHolder] = notification.useNotification();
-
   useEffect(() => {
     fetchData();
     if (location.state?.message) {
@@ -64,7 +70,10 @@ function OrderPrinting() {
       render: (text) => (
         <div style={{ whiteSpace: "normal" }}>
           {text.split("  ").map((item, index) => (
-            <div key={index}>{item}</div>
+            <div key={index}>
+              {" "}
+              {new Intl.NumberFormat("vi-VN").format(item)} đ{" "}
+            </div>
           ))}
         </div>
       ),
@@ -120,9 +129,14 @@ function OrderPrinting() {
       title: "Hóa đơn VAT",
       key: "vat",
       dataIndex: "vat",
-      render: (text, record) => (
-        <Link to={`edit-dat-hang-nha-in/${record.id}`}>{text}</Link>
-      ),
+      render: (text, record) =>
+        record.status === "Đã in xong" ? (
+          <Link to={`/nhap-va-giao-hang/edit-nhap-va-giao-hang/${record.id}`}>
+            {text}
+          </Link>
+        ) : (
+          <Link to={`edit-dat-hang-nha-in/${record.id}`}>{text}</Link>
+        ),
     },
   ];
 
@@ -137,7 +151,19 @@ function OrderPrinting() {
       }}
     >
       {contextHolder}
-      <Table columns={columns} dataSource={dataValue} pagination={false} />
+      <Table
+        columns={columns}
+        dataSource={dataValue} // Chỉ dữ liệu đã lọc
+        pagination={{
+          current: currentPage, // Trang hiện tại
+          pageSize: 15, // Số bản ghi trên mỗi trang
+          total: dataValue.length, // Sử dụng số lượng bản ghi đã lọc
+          position: ["bottomCenter"],
+          onChange: (page) => {
+            setCurrentPage(page); // Cập nhật trang hiện tại
+          },
+        }}
+      />
     </Content>
   );
 }

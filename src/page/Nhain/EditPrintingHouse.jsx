@@ -1,4 +1,4 @@
-import { Button, Form, Input, Layout, theme } from "antd";
+import { Button, Form, Input, Layout, Select, theme } from "antd";
 import { Col, Row } from "antd";
 import { Typography } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -7,11 +7,11 @@ import {
   postUpdatePrintAPI,
   deletePrintIdAPI,
 } from "../../apis/handleDataAPI";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const { Title } = Typography;
 const { Content } = Layout;
-
+const { Option } = Select;
 function EditPrintingHouse() {
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -32,18 +32,29 @@ function EditPrintingHouse() {
         const response = await getDataPrintIdAPI(token, id);
         const data = response.data.data;
 
+        console.log(data);
         // Đặt giá trị API vào form
         form.setFieldsValue({
           address: data.address,
-          city: data.city,
+          city: data.id_city,
           company_name: data.company_name,
-          district: data.district,
+          district: data.id_districts,
           email: data.email,
           note: data.note,
           phone: data.phone,
           tax_code: data.tax_code,
-          ward: data.ward,
+          ward: data.id_wards,
         });
+        setSelectedCity(data.id_city);
+        setSelectedDistrict(data.id_districts);
+
+        setSelectedCityId(data.id_city);
+        setSelectedDistrictId(data.id_districts);
+        setSelectedWardId(data.id_wards);
+
+        setSelectedCityName(data.city);
+        setSelectedDistrictName(data.district);
+        setSelectedWardName(data.ward);
       } catch (error) {
         console.error("Error fetching data:", error);
         alert("Failed to fetch data. Please try again.");
@@ -57,16 +68,20 @@ function EditPrintingHouse() {
     try {
       const formData = form.getFieldsValue();
       const address = formData.address || "";
-      const city = formData.city || "";
+      const city = selectedCityName || "";
       const company_name = formData.company_name || "";
-      const district = formData.district || "";
+      const district = selectedDistrictName || "";
       const email = formData.email || "";
       const note = formData.note || "";
       const phone = formData.phone || "";
       const session_token = token || "";
       const printer_id = id || "";
       const tax_code = formData.tax_code || "";
-      const ward = formData.ward || "";
+      const ward = selectedWardName || "";
+      const id_city = selectedCityId || "";
+      const id_districts = selectedDistrictId || "";
+      const id_wards = selectedWardId || "";
+
       try {
         const response = await postUpdatePrintAPI(
           address,
@@ -79,7 +94,10 @@ function EditPrintingHouse() {
           session_token,
           tax_code,
           ward,
-          printer_id
+          printer_id,
+          id_city,
+          id_districts,
+          id_wards
         );
         if (response.data.success == true) {
           navigate("/nha-in");
@@ -112,6 +130,52 @@ function EditPrintingHouse() {
     console.log("Không xóa");
   };
 
+  const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [selectedCityName, setSelectedCityName] = useState("");
+  const [selectedDistrictName, setSelectedDistrictName] = useState("");
+  const [selectedWardName, setSelectedWardName] = useState("");
+  const [selectedCityId, setSelectedCityId] = useState("");
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
+  const [selectedWardId, setSelectedWardId] = useState("");
+
+  // Hàm gọi API lấy danh sách thành phố
+  useEffect(() => {
+    fetch("https://open.oapi.vn/location/provinces?size=100")
+      .then((response) => response.json())
+      .then((data) => setCities(data.data))
+      .catch((error) => console.error("Lỗi khi lấy dữ liệu thành phố:", error));
+  }, []);
+
+  // Hàm gọi API lấy danh sách quận/huyện dựa vào thành phố được chọn
+  useEffect(() => {
+    if (selectedCity) {
+      fetch(`https://open.oapi.vn/location/districts/${selectedCity}?size=100`)
+        .then((response) => response.json())
+        .then((data) => setDistricts(data.data))
+        .catch((error) =>
+          console.error("Lỗi khi lấy dữ liệu quận/huyện:", error)
+        );
+    } else {
+      setDistricts([]);
+      setWards([]);
+    }
+  }, [selectedCity]);
+
+  // Hàm gọi API lấy danh sách phường dựa vào quận/huyện được chọn
+  useEffect(() => {
+    if (selectedDistrict) {
+      fetch(`https://open.oapi.vn/location/wards/${selectedDistrict}?size=100`)
+        .then((response) => response.json())
+        .then((data) => setWards(data.data))
+        .catch((error) => console.error("Lỗi khi lấy dữ liệu phường:", error));
+    } else {
+      setWards([]);
+    }
+  }, [selectedDistrict]);
   return (
     <Form form={form} layout="vertical" autoComplete="off">
       <Content
@@ -190,12 +254,66 @@ function EditPrintingHouse() {
             <Row gutter={16}>
               <Col flex={1}>
                 <Form.Item name="city" label="Thành phố">
-                  <Input placeholder="Thành phố" />
+                  <Select
+                    placeholder="Chọn thành phố"
+                    onChange={(value, name) => {
+                      setSelectedCity(value);
+                      setSelectedCityName(name.name);
+                      setSelectedCityId(name.key);
+
+                      // Xóa dữ liệu cũ của Quận/Huyện và Phường
+                      setSelectedDistrict(null);
+                      setSelectedDistrictName("");
+                      setDistricts([]); // Xóa danh sách quận/huyện cũ
+
+                      setSelectedWardName("");
+                      setWards([]); // Xóa danh sách phường cũ
+
+                      // Xóa giá trị trong form
+                      form.setFieldsValue({
+                        district: null,
+                        ward: null,
+                      });
+                    }}
+                  >
+                    {cities.map((city) => (
+                      <Option key={city.id} value={city.id} name={city.name}>
+                        {city.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
               <Col flex={1}>
                 <Form.Item name="district" label="Quận/ Huyện">
-                  <Input placeholder="Quận/ Huyện" />
+                  <Select
+                    placeholder="Chọn quận/huyện"
+                    onChange={(value, name) => {
+                      setSelectedDistrict(value);
+                      setSelectedDistrictName(name.name);
+                      setSelectedDistrictId(name.key);
+
+                      // Xóa giá trị Phường
+                      setSelectedWardName("");
+                      setWards([]); // Xóa danh sách phường cũ
+
+                      // Xóa giá trị trong form
+                      form.setFieldsValue({
+                        ward: null,
+                      });
+                    }}
+                    disabled={!selectedCity}
+                  >
+                    {districts.map((district) => (
+                      <Option
+                        key={district.id}
+                        value={district.id}
+                        name={district.name}
+                      >
+                        {district.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>
@@ -206,7 +324,20 @@ function EditPrintingHouse() {
                   name="ward"
                   label="Phường"
                 >
-                  <Input placeholder="Phường" />
+                  <Select
+                    onChange={(value, name) => {
+                      setSelectedWardName(name.name);
+                      setSelectedWardId(name.key);
+                    }}
+                    placeholder="Chọn phường"
+                    disabled={!selectedDistrict}
+                  >
+                    {wards.map((ward) => (
+                      <Option key={ward.id} value={ward.id} name={ward.name}>
+                        {ward.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>

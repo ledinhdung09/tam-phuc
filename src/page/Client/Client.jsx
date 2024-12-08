@@ -16,7 +16,7 @@ function Client() {
 
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
-  const [pageSize, setPageSize] = useState(3); // Quản lý số lượng bản ghi mỗi trang
+  const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
   const [total, setTotal] = useState(0); // Tổng số bản ghi
   useEffect(() => {
     const handleData = async () => {
@@ -30,7 +30,14 @@ function Client() {
             id: item.customer_name, // Tên khách hàng
             revenue: item.phone, // Số điện thoại
             datetime: item.email, // Email
-            actprocessing_staffion: item.ward + item.district + item.city, // Ghi chú hoặc thông tin khác
+            actprocessing_staffion:
+              item.address +
+              " ," +
+              item.ward +
+              " ," +
+              item.district +
+              " ," +
+              item.city, // Ghi chú hoặc thông tin khác
             orderId: item.latest_order
               ? item.latest_order.order_id
               : "Chưa có đơn",

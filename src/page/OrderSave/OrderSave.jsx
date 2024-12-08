@@ -19,7 +19,6 @@ import {
   Statistic,
   Tag,
   Popconfirm,
-  Tooltip,
 } from "antd";
 import moment from "moment";
 const { Title, Text } = Typography;
@@ -46,15 +45,7 @@ import {
 } from "../../apis/handleDataAPI";
 import Bill from "../Order/Bill";
 
-const getBase64 = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-
-function EditOrder() {
+function OrderSave() {
   const [note, setNote] = useState("");
 
   const { id } = useParams();
@@ -74,20 +65,6 @@ function EditOrder() {
       setMainTableData(updatedData); // Cập nhật lại bảng
     }
   };
-  const handleFileChange = (key, newFileList) => {
-    setMainTableData((prev) =>
-      prev.map((item) =>
-        item.key === key
-          ? {
-              ...item,
-              fileList: newFileList, // Cập nhật danh sách ảnh
-              image: newFileList.length > 0 ? newFileList[0] || null : null, // Thay đổi ảnh nếu có file mới
-            }
-          : item
-      )
-    );
-  };
-
   const beforeUpload = (file) => {
     const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
     if (!isJpgOrPng) {
@@ -145,10 +122,6 @@ function EditOrder() {
   useEffect(() => {
     fetchPrintingHouses();
   }, []);
-  const [cate_id, setCate_id] = useState(localStorage.getItem("cate_id"));
-  useEffect(() => {
-    setCate_id(localStorage.getItem("cate_id"));
-  }, []);
   const mainTableColumns = [
     {
       title: "Tên sản phẩm",
@@ -173,38 +146,32 @@ function EditOrder() {
       dataIndex: "image",
       key: "image",
       render: (image, record) => (
-        console.log(record),
-        (
-          <Upload
-            action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
-            listType="picture-card"
-            fileList={record.fileList}
-            onChange={({ fileList }) => handleFileChange(record.key, fileList)}
-          >
-            {record.fileList.length < 1 && (
-              <div>
-                <div style={{ marginTop: 8 }}>
-                  {image ? (
-                    <img
-                      src={
-                        "https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/" +
-                        image
-                      }
-                      alt="avatar"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    uploadButton
-                  )}
-                </div>
-              </div>
-            )}
-          </Upload>
-        )
+        <Upload
+          name="avatar"
+          listType="picture-card"
+          className="avatar-uploader"
+          showUploadList={false}
+          action="https://www.mockapi.io/upload" // URL API để upload hình
+          beforeUpload={beforeUpload} // Kiểm tra file trước khi upload
+          onChange={(info) => handleImageChange(info, record.key)} // Xử lý khi chọn hình
+        >
+          {image ? (
+            <img
+              src={
+                "https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/" +
+                image
+              }
+              alt="avatar"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            uploadButton
+          )}
+        </Upload>
       ),
     },
     {
@@ -233,30 +200,27 @@ function EditOrder() {
       dataIndex: "unitPrice",
       key: "unitPrice",
       render: (price, record) => (
-        <Tooltip title={cate_id !== "3" ? "Bạn không có quyền chỉnh sửa" : ""}>
-          <Input
-            value={price}
-            prefix="đ"
-            onChange={(e) =>
-              updateProductData(
-                record.key,
-                "unitPrice",
-                Number(e.target.value),
-                record
-              )
-            }
-            onInput={(e) =>
-              updateProductData(
-                record.key,
-                "unitPrice",
-                Number(e.target.value),
-                record
-              )
-            }
-            style={{ width: 80 }}
-            disabled={cate_id === "1"}
-          />
-        </Tooltip>
+        <Input
+          value={price}
+          prefix="đ"
+          onChange={(e) =>
+            updateProductData(
+              record.key,
+              "unitPrice",
+              Number(e.target.value),
+              record
+            )
+          }
+          onInput={(e) =>
+            updateProductData(
+              record.key,
+              "unitPrice",
+              Number(e.target.value),
+              record
+            )
+          }
+          style={{ width: 80 }}
+        />
       ),
     },
     {
@@ -328,7 +292,6 @@ function EditOrder() {
           parseFloat(minPlusPrice), // Tính toán tổng giá
       printer: product.category_name, // Loại in
       date: null, // Ngày giao mặc định
-      fileList: [],
     };
 
     // Kiểm tra nếu sản phẩm đã tồn tại
@@ -423,13 +386,11 @@ function EditOrder() {
     fetchData();
   }, [token]);
   const formatTableData = (dataSource) => {
-    console.log(dataSource);
     return dataSource.map((row) => ({
       product_code: row.key,
       quantity: row.quantity,
       price: row.unitPrice,
       plus_price: row.plusPrice || 0, // Lấy giá cộng thêm từ từng sản phẩm
-      avatar: row.image,
     }));
   };
 
@@ -460,7 +421,7 @@ function EditOrder() {
     formData = {
       ...formData,
       customer_id: idCustomer,
-      order_status: 2,
+      order_status: 1,
       session_token: token,
       processing_employee_id: selectedEmployee,
       design_confirm_employee_id: selectedEmployeeDesign,
@@ -485,6 +446,7 @@ function EditOrder() {
       alert("Error fetching the form. Please try again.");
     }
   };
+
   const handleSubmitEdit = async () => {
     let formData = form.getFieldsValue(); // Lấy dữ liệu từ form
     const formattedData = formatTableData(mainTableData);
@@ -492,7 +454,7 @@ function EditOrder() {
     formData = {
       ...formData,
       customer_id: idCustomer,
-      order_status: 1,
+      order_status: 5,
       session_token: token,
       processing_employee_id: selectedEmployee,
       design_confirm_employee_id: selectedEmployeeDesign,
@@ -654,17 +616,6 @@ function EditOrder() {
                   parseFloat(product.plus_price || 0),
                 multiple_pricing: productData.multiple_pricing,
                 plusPrice: product.plus_price,
-                fileList: product.avatar
-                  ? [
-                      {
-                        uid: "-1",
-                        name: "image.png",
-                        url:
-                          "https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/" +
-                          product.avatar,
-                      },
-                    ]
-                  : [], // Nếu có ảnh ban đầu, khởi tạo fileList
               };
             })
           );
@@ -696,7 +647,7 @@ function EditOrder() {
   const handleReturnOrder = async () => {
     const token = localStorage.getItem("authToken");
     try {
-      const response = await updateOrdersStatusAPI(token, id, 4);
+      const response = await updateOrdersStatusAPI(token, id, 3);
       console.log(response);
       if (response.data.success == true) {
         navigate("/don-hang");
@@ -843,8 +794,8 @@ function EditOrder() {
 
           <Space style={{ float: "right" }}>
             <Popconfirm
-              title="Bạn có muốn xóa đơn hàng này không?"
-              onConfirm={handleDeleteOrder} // Hàm được gọi khi nhấn "Xóa"
+              title="Bạn có muốn trả hàng không?"
+              onConfirm={handleReturnOrder} // Hàm được gọi khi nhấn "Xóa"
               okText="Có"
               cancelText="Hủy"
               okButtonProps={{ type: "primary", danger: true }} // Nút "Xóa" màu đỏ
@@ -853,11 +804,10 @@ function EditOrder() {
               <Button
                 style={{
                   marginRight: "1rem",
-                  backgroundColor: "red",
                 }}
                 type="primary"
               >
-                Xóa
+                Trả hàng
               </Button>
             </Popconfirm>
 
@@ -1303,19 +1253,15 @@ function EditOrder() {
                   Outlined
                   color="primary"
                   onClick={handleSubmitEdit}
-                  style={{ fontSize: "12px" }}
+                  style={{}}
                 >
-                  CẬP NHẬT ĐƠN HÀNG
+                  LƯU THÔNG TIN
                 </Button>
               </Col>
 
               <Col>
-                <Button
-                  type="primary"
-                  onClick={handleSubmitAdd}
-                  style={{ fontSize: "12px" }}
-                >
-                  ĐẶT HÀNG NHÀ CUNG CẤP
+                <Button type="primary" onClick={handleSubmitAdd} style={{}}>
+                  CẬP NHẬT ĐƠN HÀNG
                 </Button>
               </Col>
             </Row>
@@ -1385,21 +1331,11 @@ function EditOrder() {
           </div>
         </Card>
         <div id="print-area" style={{ display: "none" }}>
-          {console.log(nameCustomer)}
-          {console.log(mainTableData)}
-          {console.log(phoneCustomer)}
-          {console.log(addressCustomer)}
-          <Bill
-            name={nameCustomer}
-            orderId={order.id}
-            data={mainTableData}
-            phone={phoneCustomer}
-            address={addressCustomer}
-          />
+          <Bill name={nameCustomer} orderId={order.id} />
         </div>
       </Form>
     </Content>
   );
 }
 
-export default EditOrder;
+export default OrderSave;

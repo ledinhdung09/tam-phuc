@@ -21,10 +21,12 @@ const END_POINT = {
   ALL_STAFF: "get_all_accounts.php",
   STAFF_BY_ID: "get_account_by_id.php",
   UPDATE_STAFF: "update_account.php",
+  CATE_STAFF: "get_all_cate_account.php",
 
   PRODUCT: "product/qlsp.php",
   PRODUCT_ALL: "product/show_products.php",
   PRODUCT_BY_ID: "product/show_product_by_id.php",
+  PRODUCT_ORDER: "product/check_product_order.php",
 
   ORDER_ALL: "order/get_orders.php",
   ORDER_ID: "order/get_order.php",
@@ -32,8 +34,35 @@ const END_POINT = {
   ORDER_UPDATE: "order/update_order.php",
   ORDER_UPDATE_DETAIL: "order/update_detail_order.php",
   ORDER_UPDATE_STATUS: "order/update_order_status.php",
+  ORDER_UPDATE_SHIP: "order/update_ship_order.php",
 
   GET_QUANTITY: "product/get_quatity_product.php",
+
+  REPORT_API: "report/report.php",
+};
+
+export const getDataCateAccountAPI = () => {
+  return axiosClient.get(`${END_POINT.CATE_STAFF}`);
+};
+
+export const getDataReportAPI = () => {
+  return axiosClient.get(`${END_POINT.REPORT_API}`);
+};
+
+export const updateOrdersShipAPI = (
+  session_token,
+  order_id,
+  order_status,
+  price_ship,
+  total
+) => {
+  return axiosClient.post(END_POINT.ORDER_UPDATE_SHIP, {
+    session_token: session_token,
+    order_id: order_id,
+    order_status: order_status,
+    price_ship: price_ship,
+    total: total,
+  });
 };
 
 export const updateOrdersStatusAPI = (
@@ -56,6 +85,10 @@ export const updateOrdersAPI = (data) => {
     session_token: data.session_token,
     product_details: data.product_details,
     order_id: data.order_id,
+    price_ship: data.price_ship,
+    total_print: data.total_print,
+    total: data.total,
+    order_status: data.order_status,
   });
 };
 
@@ -99,14 +132,25 @@ export const postDataOrdersAPI = (data) => {
   return axiosClient.post(END_POINT.ORDER_ADD, {
     session_token: data.session_token,
     customer_id: data.customer_id,
-    recipient_name: data.recipient_name,
-    recipient_phone: data.recipient_phone,
-    delivery_address: data.delivery_address,
+
+    recipient_name:
+      data.recipient_name !== undefined ? data.recipient_name : "",
+    recipient_phone:
+      data.recipient_phone !== undefined ? data.recipient_phone : "",
+
+    delivery_address:
+      data.delivery_address !== undefined ? data.delivery_address : "",
     order_status: data.order_status,
     notes: data.notes,
     product_details: data.product_details,
-    processing_employee_id: data.processing_employee_id,
-    design_confirm_employee_id: data.design_confirm_employee_id,
+    processing_employee_id:
+      data.processing_employee_id !== undefined
+        ? data.processing_employee_id
+        : "",
+    design_confirm_employee_id:
+      data.design_confirm_employee_id !== undefined
+        ? data.design_confirm_employee_id
+        : "",
     estimated_delivery_date: data.estimated_delivery_date,
     total: data.total,
     vat: data.vat,
@@ -139,6 +183,13 @@ export const deleteProductAPI = (token, productId) => {
       session_token: token,
       id: productId,
     },
+  });
+};
+
+export const getProductOrderAPI = (session_token, product_name) => {
+  return axiosClient.post(END_POINT.PRODUCT_ORDER, {
+    product_name: product_name,
+    session_token: session_token,
   });
 };
 
@@ -206,6 +257,7 @@ export const postUpdateStaffAPI = (data) => {
     username: data.username,
     password: data.password,
     permissions: data.permissions,
+    cate_account: data.cate,
   });
 };
 
@@ -215,6 +267,7 @@ export const postAddStaffAPI = (data) => {
     password: data.password,
     permissions: data.permissions,
     session_token: data.session_token,
+    cate_account: data.cate,
   });
 };
 
@@ -268,7 +321,10 @@ export const postUpdatePrintAPI = (
   session_token,
   tax_code,
   ward,
-  printer_id
+  printer_id,
+  id_city,
+  id_districts,
+  id_wards
 ) => {
   return axiosClient.post(END_POINT.PRINT_UPDATE, {
     address,
@@ -282,6 +338,9 @@ export const postUpdatePrintAPI = (
     tax_code,
     ward,
     printer_id,
+    id_city,
+    id_districts,
+    id_wards,
   });
 };
 
@@ -310,7 +369,10 @@ export const postAddPrintAPI = (
   phone,
   session_token,
   tax_code,
-  ward
+  ward,
+  id_city,
+  id_districts,
+  id_wards
 ) => {
   return axiosClient.post(END_POINT.PRINT_ADD, {
     address,
@@ -323,6 +385,9 @@ export const postAddPrintAPI = (
     session_token,
     tax_code,
     ward,
+    id_city,
+    id_districts,
+    id_wards,
   });
 };
 
@@ -346,7 +411,10 @@ export const postAddCustomerAPI = (
   phone,
   session_token,
   tax_code,
-  ward
+  ward,
+  id_city,
+  id_districts,
+  id_wards
 ) => {
   return axiosClient.post(END_POINT.CUSTOMER_ADD, {
     birth_year,
@@ -363,6 +431,9 @@ export const postAddCustomerAPI = (
     session_token,
     tax_code,
     ward,
+    id_city,
+    id_districts,
+    id_wards,
   });
 };
 
@@ -381,7 +452,10 @@ export const postUpdateCustomerAPI = (
   session_token,
   tax_code,
   ward,
-  customer_id
+  customer_id,
+  id_city,
+  id_districts,
+  id_wards
 ) => {
   return axiosClient.post(END_POINT.CUSTOMER_UPDATE, {
     birth_year,
@@ -399,6 +473,9 @@ export const postUpdateCustomerAPI = (
     tax_code,
     ward,
     customer_id,
+    id_city,
+    id_districts,
+    id_wards,
   });
 };
 

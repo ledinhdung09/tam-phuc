@@ -16,7 +16,7 @@ function Products() {
 
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
-  const [pageSize, setPageSize] = useState(3); // Quản lý số lượng bản ghi mỗi trang
+  const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
   const [total, setTotal] = useState(0); // Tổng số bản ghi
   useEffect(() => {
     fetchData();
@@ -33,27 +33,35 @@ function Products() {
         rules: item.rules,
       }));
       setData(transformedData);
+      setFilteredData(transformedData);
       setTotal(response.data.products.length);
     } catch (error) {
       console.error("Error fetching data:", error);
       alert("Error fetching the data. Please try again.");
     }
   };
-
+  const [cate_id, setCate_id] = useState(localStorage.getItem("cate_id"));
+  useEffect(() => {
+    setCate_id(localStorage.getItem("cate_id"));
+  }, []);
   const handleDelete = async (productId) => {
-    const token = localStorage.getItem("authToken");
-    try {
-      const response = await deleteProductAPI(token, productId);
-      console.log(response);
-      if (response.data.success) {
-        alert("Xóa sản phẩm thành công");
-        fetchData(); // Tải lại danh sách sau khi xóa
-      } else {
+    if (cate_id === "1" || cate_id === "2") {
+      alert("Bạn không có quyền xóa sản phẩm");
+    } else {
+      const token = localStorage.getItem("authToken");
+      try {
+        const response = await deleteProductAPI(token, productId);
+        console.log(response);
+        if (response.data.success) {
+          alert("Xóa sản phẩm thành công");
+          fetchData(); // Tải lại danh sách sau khi xóa
+        } else {
+          alert("Xóa sản phẩm thất bại. Vui lòng thử lại.");
+        }
+      } catch (error) {
+        console.error("Error deleting product:", error);
         alert("Xóa sản phẩm thất bại. Vui lòng thử lại.");
       }
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      alert("Xóa sản phẩm thất bại. Vui lòng thử lại.");
     }
   };
 
@@ -63,11 +71,31 @@ function Products() {
       dataIndex: "id",
       key: "id",
       render: (text, record) => (
-        <Link to={`/san-pham/edit-san-pham/${record.key}`}>
-          <div style={{ color: "green" }}>{text}</div>
-        </Link>
+        <span
+          style={{
+            display: "inline-block",
+            width: "100%",
+            height: "100%",
+            color: "green",
+          }}
+          onClick={() => {
+            if (cate_id === "1" || cate_id === "2") {
+              alert("Bạn không có quyền truy cập vào");
+              console.log(cate_id);
+            }
+          }}
+        >
+          {cate_id === "3" ? (
+            <Link to={`/san-pham/edit-san-pham/${record.key}`}>
+              <div style={{ color: "green" }}>{text}</div>
+            </Link>
+          ) : (
+            <div>{text}</div>
+          )}
+        </span>
       ),
     },
+
     {
       title: "Tên loại sản phẩm",
       dataIndex: "cate",
@@ -93,7 +121,21 @@ function Products() {
       ),
     },
   ];
-
+  const [filteredData, setFilteredData] = useState([]); // Dữ liệu sau khi tìm kiếm
+  const [searchTerm, setSearchTerm] = useState(""); // Từ khóa tìm kiếm
+  useEffect(() => {
+    handleSearch(searchTerm); // Lọc dữ liệu khi từ khóa tìm kiếm thay đổi
+  }, [searchTerm, data]);
+  const handleSearch = (term) => {
+    const lowercasedTerm = term.toLowerCase();
+    const filtered = data.filter(
+      (item) =>
+        item.id.toLowerCase().includes(lowercasedTerm) || // Tìm theo tên sản phẩm
+        item.cate.toLowerCase().includes(lowercasedTerm) // Tìm theo loại sản phẩm
+    );
+    setFilteredData(filtered);
+    setTotal(filtered.length); // Cập nhật tổng số bản ghi
+  };
   return (
     <Content
       style={{
@@ -118,16 +160,30 @@ function Products() {
           </Title>
         </Col>
         <Col>
-          <Link to="/san-pham/tao-san-pham">
+          {cate_id === "3" ? (
+            <Link to="/san-pham/tao-san-pham">
+              <Button
+                icon={<PlusCircleFilled />}
+                style={{ backgroundColor: "green", color: "white" }}
+                type="primary"
+              >
+                Tạo sản phẩm
+              </Button>
+            </Link>
+          ) : (
             <Button
               icon={<PlusCircleFilled />}
-              iconPosition="start"
-              style={{ backgroundColor: "green", color: "white" }}
-              type="primary"
+              style={{
+                backgroundColor: "gray",
+                color: "white",
+                cursor: "not-allowed",
+              }}
+              type="default"
+              onClick={() => alert("Bạn không có quyền tạo sản phẩm")}
             >
               Tạo sản phẩm
             </Button>
-          </Link>
+          )}
         </Col>
       </Row>
       <Row>
@@ -147,10 +203,12 @@ function Products() {
               marginBottom: 20,
             }}
             prefix={<SearchOutlined />}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} // Cập nhật từ khóa tìm kiếm
           />
           <Table
             columns={columns}
-            dataSource={data}
+            dataSource={filteredData}
             pagination={{
               current: currentPage,
               pageSize: pageSize,

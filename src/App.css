@@ -12,10 +12,10 @@ body {
   font-family: Arial, sans-serif;
 }
 
-.custom-form-item {
+#model_customer.custom-form-item {
   margin: 0px !important;
 }
-.ant-modal {
+#model_customer > .ant-modal {
   right: 15%;
   top: 32%;
 }

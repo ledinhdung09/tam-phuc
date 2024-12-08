@@ -42,6 +42,7 @@ function OrderSuccess() {
   const [order_id, setOrder_id] = useState();
   const [dateOrder, setDateOrder] = useState();
   const [promotion, setPromotion] = useState(0); // Khuyến mãi
+  const [price_ship, setPrice_ship] = useState(0); // Vận chuyển
   const [vat, setVAT] = useState(0); // VAT (%)
   const [deposit, setDeposit] = useState(0); // Đặt cọc
   const totalProductPrice = calculateTotalPrice(mainTableData);
@@ -52,6 +53,7 @@ function OrderSuccess() {
   const [customerId, setCustomerId] = useState(""); // Trạng thái lưu ngày dự kiến
   const [customerName, setCustomerName] = useState(""); // Trạng thái lưu ngày dự kiến
   const [notes, setNotes] = useState(""); // Trạng thái lưu ngày dự kiến
+  const [total, setTotal] = useState(); // Còn lại
 
   useEffect(() => {
     const fetchDataOrderById = async () => {
@@ -69,6 +71,8 @@ function OrderSuccess() {
         setPromotion(response.data.order.promotion);
         console.log("Check Products: ", products);
         setDataProducts(products);
+        setPrice_ship(response.data.order.price_ship);
+        setTotal(response.data.order.total);
         setCustomerId(response.data.order.customer_id); // Cập nhật customerId
         setNotes(response.data.order.notes); // Cập nhật customerId
         const estimatedDateString = response.data.order.estimated_delivery_date;
@@ -123,7 +127,7 @@ function OrderSuccess() {
                   notes: productData.notes,
                 },
                 unit: productData.rules,
-                image: "/",
+                image: product.avatar,
                 quantity: product.quantity,
                 unitPrice: product.price,
                 totalPrice:
@@ -179,7 +183,16 @@ function OrderSuccess() {
       title: "Hình ảnh",
       dataIndex: "image",
       key: "image",
-      render: (src) => <img src={src} alt="Product" style={{ width: 50 }} />,
+      render: (src) => (
+        <img
+          src={
+            "https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/" +
+            src
+          }
+          alt="Product"
+          style={{ width: 50 }}
+        />
+      ),
     },
     {
       title: "ĐVT",
@@ -429,6 +442,10 @@ function OrderSuccess() {
               <Text>{vat}%</Text>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <Text>Chi phí giao hàng:</Text>
+              <Text>{new Intl.NumberFormat("vi-VN").format(price_ship)} đ</Text>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
               <Text strong>Tổng cộng:</Text>
               <Text>
                 {new Intl.NumberFormat("vi-VN").format(totalAmount)} đ
@@ -446,10 +463,7 @@ function OrderSuccess() {
               }}
             >
               <Text>Còn lại:</Text>
-              <Text>
-                {" "}
-                {new Intl.NumberFormat("vi-VN").format(remainingAmount)} đ{" "}
-              </Text>
+              <Text> {new Intl.NumberFormat("vi-VN").format(total)} đ </Text>
             </div>
           </Space>
 

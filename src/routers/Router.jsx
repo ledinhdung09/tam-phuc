@@ -24,6 +24,10 @@ import EditProducts from "../page/Products/EditProducts";
 import Products from "../page/Products/Products";
 import Bill from "../page/Order/Bill";
 import OrderSuccess from "../page/OrderSuccess/OrderSuccess";
+import OrderSave from "../page/OrderSave/OrderSave";
+import OrderDelete from "../page/OrderDelete/OrderDelete";
+import OrderFail from "../page/OrderFail/OrderFail";
+import OrderDetail from "../page/Order/OrderDetail";
 
 function RouterDashboard() {
   // Kiểm tra trạng thái đăng nhập (ví dụ: token trong localStorage)
@@ -92,6 +96,38 @@ function RouterDashboard() {
         }
       />
       <Route
+        path="/tong-quan/giao-hang-that-bai/:id"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <OrderFail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tong-quan/da-xoa/:id"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <OrderDelete />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tong-quan/dang-giao/:id"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <EditImportAndDeliveryGoods />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tong-quan/da-luu/:id"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <OrderSave />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/don-hang"
         element={
           <ProtectedRoute isAuthenticated={isAuthenticated}>
@@ -120,6 +156,14 @@ function RouterDashboard() {
         element={
           <ProtectedRoute isAuthenticated={isAuthenticated}>
             <Bill />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/don-hang/chi-tiet-don-hang/:id"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <OrderDetail />
           </ProtectedRoute>
         }
       />

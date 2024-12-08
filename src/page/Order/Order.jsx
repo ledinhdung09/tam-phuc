@@ -89,14 +89,26 @@ function Order() {
       ),
     },
   ];
-  const fetchData = async () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const fetchData = async (page = 1, limit = 50) => {
     const token = localStorage.getItem("authToken");
     try {
-      const response = await getDataOrdersAPI(token, 1, 10);
+      const response = await getDataOrdersAPI(token, page, limit);
       console.log(response);
-      const filteredOrders = response.data.data.filter(
-        (order) => order.order_status == 1
+
+      const orders = response.data.data;
+      if (!orders || orders.length === 0) {
+        setData([]); // Nếu không có đơn hàng, đặt dữ liệu thành mảng rỗng
+        setTotalOrders(0); // Đặt tổng số đơn hàng là 0
+        return;
+      }
+      console.log(orders);
+
+      const filteredOrders = orders.filter(
+        (order) => order.order_status === "1"
       );
+
       const transformedData = filteredOrders.map((item) => ({
         key: item.order_id,
         id: item.order_id,
@@ -104,13 +116,14 @@ function Order() {
         datetime: item.order_date,
         actprocessing_staffion: item.processing_employee,
         file_processing_design: item.design_confirm_employee,
-        status: item.status_name,
+        status: "Đang báo giá",
         vat: "Xem hóa đơn",
       }));
+
       setData(transformedData);
+      setTotalOrders(filteredOrders.length); // Sử dụng số lượng đơn hàng đã lọc
     } catch (error) {
       console.error("Error fetching data:", error);
-      alert("Error fetching the data. Please try again.");
     }
   };
   useEffect(() => {
@@ -132,18 +145,25 @@ function Order() {
       ),
       children: (
         <>
-          <Table columns={columns} dataSource={data} pagination={false} />
-          {/* <Pagination
-            align="center"
-            style={{
-              paddingTop: 10,
-            }}
-            pageSize={10}
-            defaultCurrent={1}
-            total={300}
-            showSizeChanger={false}
-            showLessItems
-          /> */}
+          {data.length > 0 ? ( // Kiểm tra nếu có dữ liệu
+            <Table
+              columns={columns}
+              dataSource={data}
+              pagination={{
+                current: currentPage,
+                pageSize: 15,
+                total: data.length,
+                position: ["bottomCenter"],
+                onChange: (page) => {
+                  setCurrentPage(page);
+                },
+              }}
+            />
+          ) : (
+            <div style={{ textAlign: "center", padding: "20px" }}>
+              Không có đơn hàng nào để hiển thị.
+            </div>
+          )}
         </>
       ),
     },

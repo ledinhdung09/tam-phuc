@@ -1,65 +1,12 @@
-import { Table, Typography, Row, Col, Divider } from "antd";
+import { Table, Typography, Row, Col, Divider, Flex } from "antd";
+import { useEffect } from "react";
 
 const { Title, Text } = Typography;
 
 const Bill = (props) => {
-  const columns = [
-    {
-      title: "STT",
-      dataIndex: "stt",
-      key: "stt",
-    },
-    {
-      title: "Sản phẩm",
-      dataIndex: "product",
-      key: "product",
-    },
-    {
-      title: "Mô tả",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Hình",
-      dataIndex: "image",
-      key: "image",
-      render: (text) => <img src={text} alt="product" style={{ width: 80 }} />,
-    },
-    {
-      title: "ĐVT",
-      dataIndex: "unit",
-      key: "unit",
-    },
-    {
-      title: "Số lượng",
-      dataIndex: "quantity",
-      key: "quantity",
-    },
-    {
-      title: "Đơn giá",
-      dataIndex: "price",
-      key: "price",
-    },
-    {
-      title: "Thành tiền",
-      dataIndex: "total",
-      key: "total",
-    },
-  ];
-
-  const data = [
-    {
-      key: "1",
-      stt: "1",
-      product: "Bao thư 22 x 12",
-      description: "Kích thước: 22 x 12 cm (Nắp 3.5 cm)",
-      image: "https://via.placeholder.com/80", // Replace with your image URL
-      unit: "Cái",
-      quantity: 200,
-      price: "1,550",
-      total: "310,000",
-    },
-  ];
+  useEffect(() => {
+    console.log(props);
+  });
 
   return (
     <div style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
@@ -107,56 +54,136 @@ const Bill = (props) => {
       <Divider />
 
       {/* Thông tin khách hàng */}
-      <Row
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <Col span={12}>
-          <Title level={5}>Người nhận: {props.name}</Title>
-          <Text>
-            Địa chỉ: 60 Lê Quyên <br />
-            Điện thoại: 0932768122
-          </Text>
-        </Col>
-        <Col span={12}>
-          <Title level={5}>Công ty:</Title>
-          <Text>
-            CÔNG TY TNHH TM DV IN ẤN TÂM PHÚC <br />
-            Địa chỉ: 60 Lê Quyên, Phường 4, Quận 8, TP. HCM <br />
-            MST: 0315389943
-          </Text>
-        </Col>
-      </Row>
+      {(props.name || props.address || props.phone) && (
+        <Row
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          {props.name || props.address || props.phone ? (
+            <Col span={12}>
+              {props.name && <Title level={5}>Người nhận: {props.name}</Title>}
+              <Text>
+                {props.address && (
+                  <>
+                    Địa chỉ: {props.address} <br />
+                  </>
+                )}
+                {props.phone && <>Điện thoại: {props.phone}</>}
+              </Text>
+            </Col>
+          ) : null}
+          <Col span={12}>
+            <Title level={5}>Công ty:</Title>
+            <Text>
+              CÔNG TY TNHH TM DV IN ẤN TÂM PHÚC <br />
+              Địa chỉ: 60 Lê Quyên, Phường 4, Quận 8, TP. HCM <br />
+              MST: 0315389943
+            </Text>
+          </Col>
+        </Row>
+      )}
       <Divider />
 
       {/* Bảng sản phẩm */}
-      <Table
-        columns={columns}
-        dataSource={data}
-        pagination={false}
-        summary={() => (
-          <>
-            <Table.Summary.Row>
-              <Table.Summary.Cell colSpan={6}>Khuyến mãi</Table.Summary.Cell>
-              <Table.Summary.Cell colSpan={2}>15,500</Table.Summary.Cell>
-            </Table.Summary.Row>
-            <Table.Summary.Row>
-              <Table.Summary.Cell colSpan={6}>VAT</Table.Summary.Cell>
-              <Table.Summary.Cell colSpan={2}>23,560</Table.Summary.Cell>
-            </Table.Summary.Row>
-            <Table.Summary.Row>
-              <Table.Summary.Cell colSpan={6}>Tổng cộng</Table.Summary.Cell>
-              <Table.Summary.Cell colSpan={2}>318,060</Table.Summary.Cell>
-            </Table.Summary.Row>
-            <Table.Summary.Row>
-              <Table.Summary.Cell colSpan={6}>Đặt cọc</Table.Summary.Cell>
-              <Table.Summary.Cell colSpan={2}>50%</Table.Summary.Cell>
-            </Table.Summary.Row>
-          </>
-        )}
-      />
+      {props.data && props.data.length > 0 && (
+        <table border="1" style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th width={50}>STT</th>
+              <th width={100}>Sản phẩm</th>
+              <th width={200}>Mô tả</th>
+              <th width={100}>Hình</th>
+              <th width={50}>ĐVT</th>
+              <th width={50}>Số lượng</th>
+              <th width={100}>Đơn giá</th>
+              <th width={100}>Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.data.map((item, index) => (
+              <tr key={index}>
+                <td
+                  style={{
+                    textAlign: "center",
+                  }}
+                >
+                  {index + 1}
+                </td>
+                <td
+                  style={{
+                    textAlign: "center",
+                  }}
+                >
+                  {item.productDetails?.name || item.productDetail?.name || ""}
+                </td>
+                <td
+                  style={{
+                    textAlign: "left",
+                  }}
+                >
+                  <div
+                    style={{ fontSize: 12, color: "#666", marginTop: 4 }}
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        item.productDetails?.notes?.replace(/\n/g, "<br>") ||
+                        item.productDetail?.notes?.replace(/\n/g, "<br>") ||
+                        "",
+                    }}
+                  ></div>
+                </td>
+                <td
+                  style={{
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      margin: "1rem",
+                    }}
+                    src={
+                      item.image
+                        ? `https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/${item.image}`
+                        : ""
+                    }
+                  ></img>
+                </td>
+                <td
+                  style={{
+                    textAlign: "center",
+                  }}
+                >
+                  {item.unit || ""}
+                </td>
+                <td
+                  style={{
+                    textAlign: "center",
+                  }}
+                >
+                  {item.quantity || "0"}
+                </td>
+                <td
+                  style={{
+                    textAlign: "center",
+                  }}
+                >
+                  {item.unitPrice || "0"}
+                </td>
+                <td
+                  style={{
+                    textAlign: "center",
+                  }}
+                >
+                  {item.totalPrice || "0"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

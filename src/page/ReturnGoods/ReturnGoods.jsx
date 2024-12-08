@@ -7,6 +7,8 @@ const { Content } = Layout;
 
 function ReturnGoods() {
   const [dataValue, setDataValue] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
   const fetchData = async () => {
     const token = localStorage.getItem("authToken");
     try {
@@ -15,7 +17,9 @@ function ReturnGoods() {
       const orders = res.data.data;
 
       // Lọc các order có order_status = 2
-      const filteredOrders = orders.filter((order) => order.order_status == 4);
+      const filteredOrders = orders.filter(
+        (order) => order.order_status == 4 || order.order_status == 5
+      );
 
       const transformedData = filteredOrders.map((item) => ({
         key: item.order_id,
@@ -28,6 +32,7 @@ function ReturnGoods() {
         vat: "Xem hóa đơn",
       }));
       setDataValue(transformedData);
+      setTotalOrders(filteredOrders.length);
       console.log("Orders with status 2: ", filteredOrders);
     } catch (error) {
       console.log(error);
@@ -64,7 +69,10 @@ function ReturnGoods() {
       render: (text) => (
         <div style={{ whiteSpace: "normal" }}>
           {text.split("  ").map((item, index) => (
-            <div key={index}>{item}</div>
+            <div key={index}>
+              {" "}
+              {new Intl.NumberFormat("vi-VN").format(item)} đ{" "}
+            </div>
           ))}
         </div>
       ),
@@ -137,7 +145,19 @@ function ReturnGoods() {
       }}
     >
       {contextHolder}
-      <Table columns={columns} dataSource={dataValue} pagination={false} />
+      <Table
+        columns={columns}
+        dataSource={dataValue} // Chỉ dữ liệu đã lọc
+        pagination={{
+          current: currentPage, // Trang hiện tại
+          pageSize: 15, // Số bản ghi trên mỗi trang
+          total: dataValue.length, // Sử dụng số lượng bản ghi đã lọc
+          position: ["bottomCenter"],
+          onChange: (page) => {
+            setCurrentPage(page); // Cập nhật trang hiện tại
+          },
+        }}
+      />
     </Content>
   );
 }

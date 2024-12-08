@@ -1,4 +1,4 @@
-import { Button, Form, Input, Layout, Radio, theme } from "antd";
+import { Button, Form, Input, Layout, Radio, Select, theme } from "antd";
 import { Col, Row } from "antd";
 import { Typography } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -7,10 +7,11 @@ import {
   postUpdateCustomerAPI,
   deleteCustomerIdAPI,
 } from "../../apis/handleDataAPI";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const { Title } = Typography;
 const { Content } = Layout;
+const { Option } = Select;
 
 function EditClient() {
   const {
@@ -31,23 +32,32 @@ function EditClient() {
       try {
         const response = await getDataCustomerIdAPI(token, id);
         const data = response.data.data;
-
         // Đặt giá trị API vào form
         form.setFieldsValue({
           address: data.address,
-          city: data.city,
+          city: data.id_city,
           company_name: data.company_name,
-          district: data.district,
+          district: data.id_districts,
           email: data.email,
           note: data.note,
           phone: data.phone,
           tax_code: data.tax_code,
-          ward: data.ward,
+          ward: data.id_wards,
           customer_name: data.customer_name,
           company_email: data.company_email,
           birth_year: data.birth_year,
           gender: data.gender,
         });
+        setSelectedCity(data.id_city);
+        setSelectedDistrict(data.id_districts);
+
+        setSelectedCityId(data.id_city);
+        setSelectedDistrictId(data.id_districts);
+        setSelectedWardId(data.id_wards);
+
+        setSelectedCityName(data.city);
+        setSelectedDistrictName(data.district);
+        setSelectedWardName(data.ward);
       } catch (error) {
         console.error("Error fetching data:", error);
         alert("Failed to fetch data. Please try again.");
@@ -60,11 +70,12 @@ function EditClient() {
   const handleAddClient = async () => {
     const formData = form.getFieldsValue();
 
+    const customer_id = id || "";
     const address = formData.address || "";
-    const city = formData.city || "";
+    const city = selectedCityName || "";
     const company_email = formData.company_email || "";
     const company_name = formData.company_name || "";
-    const district = formData.district || "";
+    const district = selectedDistrictName || "";
     const email = formData.email || "";
     const gender = formData.gender || "";
     const customer_name = formData.customer_name || "";
@@ -72,9 +83,11 @@ function EditClient() {
     const phone = formData.phone || "";
     const session_token = token || ""; // Nếu cần giá trị token
     const tax_code = formData.tax_code || "";
-    const ward = formData.ward || "";
+    const ward = selectedWardName || "";
     const birth_year = formData.birth_year || "";
-    const customer_id = id || "";
+    const id_city = selectedCityId || "";
+    const id_districts = selectedDistrictId || "";
+    const id_wards = selectedWardId || "";
 
     try {
       const response = await postUpdateCustomerAPI(
@@ -92,35 +105,91 @@ function EditClient() {
         session_token,
         tax_code,
         ward,
-        customer_id
+        customer_id,
+        id_city,
+        id_districts,
+        id_wards
       );
       if (response.data.success == true) {
         navigate("/khach-hang");
+        //console.log(response);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       alert("Error fetching the form. Please try again.");
     }
   };
-
+  const [cate_id, setCate_id] = useState(localStorage.getItem("cate_id"));
+  useEffect(() => {
+    setCate_id(localStorage.getItem("cate_id"));
+  }, []);
   const handleDelete = async () => {
-    const isRemove = confirm("Bạn muốn xóa chứ?");
-    if (isRemove) {
-      try {
-        const response = await deleteCustomerIdAPI(token, id);
-        console.log(response);
-        if (response.data.success == true) {
-          navigate("/khach-hang");
+    if (cate_id === "1") {
+      alert("Bạn không có quyền xóa khách hàng");
+    } else {
+      const isRemove = confirm("Bạn muốn xóa chứ?");
+      if (isRemove) {
+        try {
+          const response = await deleteCustomerIdAPI(token, id);
+          console.log(response);
+          if (response.data.success == true) {
+            navigate("/khach-hang");
+          }
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          alert("Failed to fetch data. Please try again.");
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        alert("Failed to fetch data. Please try again.");
+        return;
       }
-      return;
     }
-    console.log("Không xóa");
   };
+  const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [selectedCityName, setSelectedCityName] = useState("");
+  const [selectedDistrictName, setSelectedDistrictName] = useState("");
+  const [selectedWardName, setSelectedWardName] = useState("");
+  const [selectedCityId, setSelectedCityId] = useState("");
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
+  const [selectedWardId, setSelectedWardId] = useState("");
 
+  // Hàm gọi API lấy danh sách thành phố
+  useEffect(() => {
+    fetch("https://open.oapi.vn/location/provinces?size=100")
+      .then((response) => response.json())
+      .then((data) => setCities(data.data))
+      //.then((data) => console.log(data.data))
+      .catch((error) => console.error("Lỗi khi lấy dữ liệu thành phố:", error));
+  }, []);
+
+  // Hàm gọi API lấy danh sách quận/huyện dựa vào thành phố được chọn
+  useEffect(() => {
+    if (selectedCity) {
+      fetch(`https://open.oapi.vn/location/districts/${selectedCity}?size=100`)
+        .then((response) => response.json())
+        .then((data) => setDistricts(data.data))
+        .catch((error) =>
+          console.error("Lỗi khi lấy dữ liệu quận/huyện:", error)
+        );
+    } else {
+      setDistricts([]);
+      setWards([]);
+    }
+  }, [selectedCity]);
+
+  // Hàm gọi API lấy danh sách phường dựa vào quận/huyện được chọn
+  useEffect(() => {
+    if (selectedDistrict) {
+      fetch(`https://open.oapi.vn/location/wards/${selectedDistrict}?size=100`)
+        .then((response) => response.json())
+        .then((data) => setWards(data.data))
+        .catch((error) => console.error("Lỗi khi lấy dữ liệu phường:", error));
+    } else {
+      setWards([]);
+    }
+  }, [selectedDistrict]);
   return (
     <Form form={form} layout="vertical" autoComplete="off">
       <Content
@@ -258,17 +327,83 @@ function EditClient() {
             <Row gutter={16}>
               <Col flex={1}>
                 <Form.Item name="city" label="Thành phố">
-                  <Input placeholder="Thành phố" />
+                  <Select
+                    placeholder="Chọn thành phố"
+                    onChange={(value, name) => {
+                      setSelectedCity(value);
+                      setSelectedCityName(name.name);
+                      setSelectedCityId(name.key);
+                      // Xóa dữ liệu cũ của Quận/Huyện và Phường
+                      setSelectedDistrict(null);
+                      setSelectedDistrictName("");
+                      setDistricts([]); // Xóa danh sách quận/huyện cũ
+
+                      setSelectedWardName("");
+                      setWards([]); // Xóa danh sách phường cũ
+
+                      // Xóa giá trị trong form
+                      form.setFieldsValue({
+                        district: null,
+                        ward: null,
+                      });
+                    }}
+                  >
+                    {cities.map((city) => (
+                      <Option key={city.id} value={city.id} name={city.name}>
+                        {city.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
               <Col flex={1}>
                 <Form.Item name="district" label="Quận/ Huyện">
-                  <Input placeholder="Quận/ Huyện" />
+                  <Select
+                    placeholder="Chọn quận/huyện"
+                    onChange={(value, name) => {
+                      setSelectedDistrict(value);
+                      setSelectedDistrictName(name.name);
+                      setSelectedDistrictId(name.key);
+
+                      // Xóa giá trị Phường
+                      setSelectedWardName("");
+                      setWards([]); // Xóa danh sách phường cũ
+
+                      // Xóa giá trị trong form
+                      form.setFieldsValue({
+                        ward: null,
+                      });
+                    }}
+                    disabled={!selectedCity}
+                  >
+                    {districts.map((district) => (
+                      <Option
+                        key={district.id}
+                        value={district.id}
+                        name={district.name}
+                      >
+                        {district.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
               <Col flex={1}>
                 <Form.Item name="ward" label="Phường">
-                  <Input placeholder="Phường" />
+                  <Select
+                    onChange={(value, name) => {
+                      setSelectedWardName(name.name);
+                      setSelectedWardId(name.key);
+                    }}
+                    placeholder="Chọn phường"
+                    disabled={!selectedDistrict}
+                  >
+                    {wards.map((ward) => (
+                      <Option key={ward.id} value={ward.id} name={ward.name}>
+                        {ward.name}
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
             </Row>

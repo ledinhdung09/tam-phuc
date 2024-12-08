@@ -7,7 +7,9 @@ import {
   postUpdateStaffAPI,
   deleteStaffAPI,
   getAllStaffAPI,
+  getDataCateAccountAPI,
 } from "../../apis/handleDataAPI";
+import { Select } from "antd";
 
 const { Title } = Typography;
 const { confirm } = Modal;
@@ -21,7 +23,7 @@ function Staff() {
 
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
-  const [pageSize, setPageSize] = useState(3); // Quản lý số lượng bản ghi mỗi trang
+  const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
   const [total, setTotal] = useState(0); // Tổng số bản ghi
   const [checkedValues, setCheckedValues] = useState([]);
   const plainOptions = [
@@ -38,6 +40,7 @@ function Staff() {
         id: item.username,
         date: item.created_at,
         permissions: item.permissions,
+        cate_account: item.cate_account,
       }));
       setData(transformedData);
       setTotal(response.data.data);
@@ -66,11 +69,12 @@ function Staff() {
     const selectedPermissions = Object.keys(permissions).filter(
       (key) => permissions[key]
     );
-
+    console.log(record);
     form.setFieldsValue({
       username: record.id,
       password: "",
       confirm_password: "",
+      cate_account: record.cate_account,
     });
     setCheckedValues(selectedPermissions);
   };
@@ -117,15 +121,18 @@ function Staff() {
           username: values.username,
           password: values.password,
           permissions: permissions,
+          cate: values.cate_account,
         });
         console.log(response);
       } else {
-        await postAddStaffAPI({
+        const response = await postAddStaffAPI({
           session_token: token,
           username: values.username,
           password: values.password,
+          cate: values.cate_account,
           permissions,
         });
+        console.log(response);
       }
 
       fetchData();
@@ -175,6 +182,25 @@ function Staff() {
       ),
     },
   ];
+
+  const [dataSelect, setDataSelect] = useState([]);
+  useEffect(() => {
+    const fetchDataCateAccount = async () => {
+      try {
+        const response = await getDataCateAccountAPI();
+        const options = response.data.data.map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+
+        setDataSelect(options);
+      } catch (error) {
+        console.error("Error deleting staff:", error);
+        alert("Failed to delete staff. Please try again.");
+      }
+    };
+    fetchDataCateAccount();
+  }, []);
 
   return (
     <Col
@@ -285,6 +311,22 @@ function Staff() {
                 ]}
               >
                 <Input.Password placeholder="Confirm password" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col flex={1}>
+              <Form.Item name="cate_account" label="Loại tài khoản">
+                <Select
+                  showSearch
+                  placeholder="Select a person"
+                  filterOption={(input, option) =>
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                  options={dataSelect}
+                />
               </Form.Item>
             </Col>
           </Row>

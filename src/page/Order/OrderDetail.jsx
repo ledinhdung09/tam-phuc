@@ -29,7 +29,7 @@ import moment from "moment";
 const { Title, Text } = Typography;
 const { Content } = Layout;
 
-function EditReturnGoods() {
+function OrderDetail() {
   const [form] = Form.useForm();
   const calculateTotalPrice = (dataSource) => {
     return dataSource.reduce((total, record) => total + record.totalPrice, 0);
@@ -329,7 +329,7 @@ function EditReturnGoods() {
           <Col>
             <Statistic
               title="Trạng thái"
-              valueRender={() => <Tag color="red">Đã trả hàng</Tag>}
+              valueRender={() => <Tag color="green">Chi tiết đơn hàng</Tag>}
             />
           </Col>
         </Space>
@@ -486,4 +486,4 @@ function EditReturnGoods() {
   );
 }
 
-export default EditReturnGoods;
+export default OrderDetail;

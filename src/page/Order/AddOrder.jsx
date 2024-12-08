@@ -16,6 +16,7 @@ import {
   InputNumber,
   DatePicker,
   Card,
+  Tooltip,
 } from "antd";
 import moment from "moment";
 const { Title, Text } = Typography;
@@ -39,47 +40,78 @@ import {
 } from "../../apis/handleDataAPI";
 import Bill from "./Bill";
 
+const getBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+
 function AddOrder() {
+  const [cate_id, setCate_id] = useState(localStorage.getItem("cate_id"));
+  useEffect(() => {
+    setCate_id(localStorage.getItem("cate_id"));
+  }, []);
+  // upload ảnh
+  const handlePreview = async (file) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj);
+    }
+    window.open(file.url || file.preview, "_blank");
+  };
+  const handleFileChange = (key, newFileList) => {
+    setMainTableData((prev) =>
+      prev.map((item) =>
+        item.key === key
+          ? {
+              ...item,
+              fileList: newFileList,
+            }
+          : item
+      )
+    );
+  };
   const [note, setNote] = useState("");
-  const handleImageChange = (info, key) => {
-    if (info.file.status === "done") {
-      // API trả về URL của ảnh đã upload
-      const uploadedImageUrl = info.file.response.url;
+  // const handleImageChange = (info, key) => {
+  //   if (info.file.status === "done") {
+  //     // API trả về URL của ảnh đã upload
+  //     const uploadedImageUrl = info.file.response.url;
 
-      // Cập nhật dữ liệu bảng
-      const updatedData = mainTableData.map((item) => {
-        if (item.key === key) {
-          return { ...item, image: uploadedImageUrl }; // Cập nhật URL hình
-        }
-        return item;
-      });
+  //     // Cập nhật dữ liệu bảng
+  //     const updatedData = mainTableData.map((item) => {
+  //       if (item.key === key) {
+  //         return { ...item, image: uploadedImageUrl }; // Cập nhật URL hình
+  //       }
+  //       return item;
+  //     });
 
-      setMainTableData(updatedData); // Cập nhật lại bảng
-    }
-  };
-  const beforeUpload = (file) => {
-    const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
-    if (!isJpgOrPng) {
-      message.error("Bạn chỉ có thể tải lên file JPG/PNG!");
-      return false;
-    }
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error("Hình ảnh phải nhỏ hơn 2MB!");
-      return false;
-    }
-    return true;
-  };
+  //     setMainTableData(updatedData); // Cập nhật lại bảng
+  //   }
+  // };
+  // const beforeUpload = (file) => {
+  //   const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
+  //   if (!isJpgOrPng) {
+  //     message.error("Bạn chỉ có thể tải lên file JPG/PNG!");
+  //     return false;
+  //   }
+  //   const isLt2M = file.size / 1024 / 1024 < 2;
+  //   if (!isLt2M) {
+  //     message.error("Hình ảnh phải nhỏ hơn 2MB!");
+  //     return false;
+  //   }
+  //   return true;
+  // };
   const [selectedDate, setSelectedDate] = useState(
     moment().format("YYYY/MM/DD")
   ); // Lưu giá trị ngày mặc định
 
-  const uploadButton = (
-    <div>
-      <PlusOutlined />
-      <div style={{ marginTop: 8 }}>Chọn hình</div>
-    </div>
-  );
+  // const uploadButton = (
+  //   <div>
+  //     <PlusOutlined />
+  //     <div style={{ marginTop: 8 }}>Chọn hình</div>
+  //   </div>
+  // );
   const [printingHouses, setPrintingHouses] = useState([]);
   const [selectedPrinters, setSelectedPrinters] = useState({});
   const {
@@ -134,33 +166,25 @@ function AddOrder() {
       ),
     },
     {
-      title: "Hình ảnh",
-      dataIndex: "image",
-      key: "image",
-      render: (image, record) => (
-        <Upload
-          name="avatar"
-          listType="picture-card"
-          className="avatar-uploader"
-          showUploadList={false}
-          action="https://www.mockapi.io/upload" // URL API để upload hình
-          beforeUpload={beforeUpload} // Kiểm tra file trước khi upload
-          onChange={(info) => handleImageChange(info, record.key)} // Xử lý khi chọn hình
-        >
-          {image ? (
-            <img
-              src={image}
-              alt="avatar"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            uploadButton
-          )}
-        </Upload>
+      title: "Upload ảnh",
+      key: "upload",
+      render: (_, record) => (
+        console.log(record),
+        (
+          <Upload
+            action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
+            listType="picture-card"
+            fileList={record.fileList}
+            onChange={({ fileList }) => handleFileChange(record.key, fileList)}
+          >
+            {record.fileList.length < 1 && (
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            )}
+          </Upload>
+        )
       ),
     },
     {
@@ -189,27 +213,22 @@ function AddOrder() {
       dataIndex: "unitPrice",
       key: "unitPrice",
       render: (price, record) => (
-        <Input
-          value={price}
-          prefix="đ"
-          onChange={(e) =>
-            updateProductData(
-              record.key,
-              "unitPrice",
-              Number(e.target.value),
-              record
-            )
-          }
-          onInput={(e) =>
-            updateProductData(
-              record.key,
-              "unitPrice",
-              Number(e.target.value),
-              record
-            )
-          }
-          style={{ width: 80 }}
-        />
+        <Tooltip title={cate_id !== "3" ? "Bạn không có quyền chỉnh sửa" : ""}>
+          <Input
+            value={price}
+            prefix="đ"
+            onChange={(e) =>
+              updateProductData(
+                record.key,
+                "unitPrice",
+                Number(e.target.value),
+                record
+              )
+            }
+            style={{ width: 80 }}
+            disabled={cate_id === "1"}
+          />
+        </Tooltip>
       ),
     },
     {
@@ -281,6 +300,7 @@ function AddOrder() {
           parseFloat(minPlusPrice), // Tính toán tổng giá
       printer: product.category_name, // Loại in
       date: null, // Ngày giao mặc định
+      fileList: [],
     };
 
     // Kiểm tra nếu sản phẩm đã tồn tại
@@ -348,6 +368,7 @@ function AddOrder() {
         const response = await postDataCustomerAPI(token);
         const data = response.data.data;
         setCustomer(data);
+        setFilteredCustomers(data);
       } catch (error) {
         console.error("Error fetching data:", error);
         alert("Error fetching the form. Please try again.");
@@ -446,8 +467,11 @@ function AddOrder() {
   useEffect(() => {
     fetchData();
   }, [token]);
+
   const formatTableData = (dataSource) => {
+    console.log(dataSource);
     return dataSource.map((row) => ({
+      avatar: row.fileList[0],
       product_code: row.key,
       quantity: row.quantity,
       price: row.unitPrice,
@@ -476,6 +500,38 @@ function AddOrder() {
   };
 
   const handleSubmitAdd = async () => {
+    let formData = form.getFieldsValue(); // Lấy dữ liệu từ form
+    const formattedData = formatTableData(mainTableData);
+
+    formData = {
+      ...formData,
+      customer_id: idCustomer,
+      order_status: 2,
+      session_token: token,
+      processing_employee_id: selectedEmployee,
+      design_confirm_employee_id: selectedEmployeeDesign,
+      estimated_delivery_date: selectedDate,
+      product_details: formattedData,
+      total: remainingAmount,
+      vat: vat,
+      deposit: deposit,
+      promotion: discount,
+    }; // Thêm idCustomer vào formData
+    console.log(formData); // Kiểm tra kết quả
+
+    try {
+      const response = await postDataOrdersAPI(formData);
+      console.log(response);
+      if (response.data.success == true) {
+        navigate("/don-hang");
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      alert("Error fetching the form. Please try again.");
+    }
+  };
+
+  const handleSubmitEdit = async () => {
     let formData = form.getFieldsValue(); // Lấy dữ liệu từ form
     const formattedData = formatTableData(mainTableData);
 
@@ -549,6 +605,24 @@ function AddOrder() {
   const totalAmount = totalProductPrice - discount + vatAmount; // Tổng cộng
   const remainingAmount = totalAmount - deposit; // Còn lại
 
+  const [searchTerm, setSearchTerm] = useState(""); // Từ khóa tìm kiếm
+  const [filteredCustomers, setFilteredCustomers] = useState(customers); // Danh sách khách hàng đã lọc
+  const handleSearchCustomer = (value) => {
+    const searchValue = value.toLowerCase();
+    const filtered = customers.filter(
+      (customer) =>
+        customer.customer_name.toLowerCase().includes(searchValue) || // Tìm theo tên khách hàng
+        customer.phone.includes(searchValue) // Tìm theo số điện thoại
+    );
+    setFilteredCustomers(filtered); // Cập nhật danh sách đã lọc
+  };
+
+  // Xử lý khi từ khóa thay đổi
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value); // Cập nhật từ khóa
+    handleSearchCustomer(value); // Lọc danh sách
+  };
   return (
     <Content
       style={{
@@ -632,18 +706,23 @@ function AddOrder() {
                 onCancel={handleCancel}
                 footer={null}
                 mask={false}
+                id="model_customer"
                 getContainer={() => document.querySelector("#modal-container")}
               >
                 <Input
                   placeholder="Nhập số điện thoại để tìm khách hàng"
                   prefix={<SearchOutlined />}
                   style={{ marginBottom: 16 }}
+                  value={searchTerm} // Liên kết với trạng thái tìm kiếm
+                  onChange={handleInputChange} // Gọi khi có thay đổi
                 />
                 <List
                   itemLayout="horizontal"
-                  dataSource={customers}
+                  dataSource={filteredCustomers}
                   style={{
                     cursor: "pointer",
+                    maxHeight: "400px", // Chiều cao tối đa của danh sách
+                    overflowY: "auto",
                   }}
                   renderItem={(customer) => (
                     <List.Item onClick={() => handleSelectCustomer(customer)}>
@@ -663,7 +742,6 @@ function AddOrder() {
               style={{
                 padding: "1rem",
                 borderRadius: "10px",
-
                 marginRight: 20,
                 maxHeight: 250,
                 background: colorBgContainer,
@@ -692,6 +770,7 @@ function AddOrder() {
                 padding: "1rem",
                 borderRadius: "10px",
                 flex: 2,
+                gap: 16,
                 marginRight: 20,
                 maxHeight: 250,
                 background: colorBgContainer,
@@ -717,13 +796,6 @@ function AddOrder() {
               </Space>
             </Col>
           </Row>
-          <Button
-            type="primary"
-            onClick={handlePrint}
-            icon={<PrinterOutlined />}
-          >
-            In
-          </Button>
         </Row>
 
         <Card
@@ -993,30 +1065,24 @@ function AddOrder() {
               }}
             >
               <Col>
-                <Button Outlined color="primary" style={{}}>
+                <Button
+                  Outlined
+                  color="primary"
+                  onClick={handleSubmitEdit}
+                  style={{}}
+                >
                   LƯU THÔNG TIN
                 </Button>
               </Col>
 
               <Col>
                 <Button type="primary" onClick={handleSubmitAdd} style={{}}>
-                  XÁC NHẬN ĐẶT HÀNG
+                  ĐẶT HÀNG NHÀ CUNG CẤP
                 </Button>
               </Col>
             </Row>
           </Col>
         </Row>
-
-        <Button
-          color="danger"
-          variant="solid"
-          Solid
-          style={{
-            marginBottom: "1rem",
-          }}
-        >
-          Xóa phiếu
-        </Button>
 
         <Card
           title="Thông tin phiếu đặt hàng"
@@ -1061,7 +1127,12 @@ function AddOrder() {
           </div>
         </Card>
         <div id="print-area" style={{ display: "none" }}>
-          <Bill name={nameCustomer} orderId={order.id} />
+          <Bill
+            name={nameCustomer}
+            orderId={order.id}
+            columns={mainTableColumns} // Truyền tên cột
+            data={mainTableData}
+          />
         </div>
       </Form>
     </Content>

@@ -29,7 +29,7 @@ import moment from "moment";
 const { Title, Text } = Typography;
 const { Content } = Layout;
 
-function EditReturnGoods() {
+function OrderDelete() {
   const [form] = Form.useForm();
   const calculateTotalPrice = (dataSource) => {
     return dataSource.reduce((total, record) => total + record.totalPrice, 0);
@@ -52,13 +52,7 @@ function EditReturnGoods() {
   const [customerId, setCustomerId] = useState(""); // Trạng thái lưu ngày dự kiến
   const [customerName, setCustomerName] = useState(""); // Trạng thái lưu ngày dự kiến
   const [notes, setNotes] = useState(""); // Trạng thái lưu ngày dự kiến
-  const [dataProductDetail, setDataProductDetail] = useState([]);
-  const [new1, setNew1] = useState();
-  useEffect(() => {
-    console.log(remainingAmount);
-    console.log(valueDelivery);
-    setNew1(parseFloat(remainingAmount) + parseFloat(valueDelivery));
-  });
+
   useEffect(() => {
     const fetchDataOrderById = async () => {
       try {
@@ -79,7 +73,6 @@ function EditReturnGoods() {
         setNotes(response.data.order.notes); // Cập nhật customerId
         const estimatedDateString = response.data.order.estimated_delivery_date;
         console.log(estimatedDateString);
-        setValueDelivery(response.data.order.price_ship);
         setEstimatedDate(moment(estimatedDateString));
         console.log(notes);
       } catch (error) {
@@ -130,7 +123,7 @@ function EditReturnGoods() {
                   notes: productData.notes,
                 },
                 unit: productData.rules,
-                image: product.avatar,
+                image: "/",
                 quantity: product.quantity,
                 unitPrice: product.price,
                 totalPrice:
@@ -186,16 +179,7 @@ function EditReturnGoods() {
       title: "Hình ảnh",
       dataIndex: "image",
       key: "image",
-      render: (src) => (
-        <img
-          src={
-            "https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/" +
-            src
-          }
-          alt="Product"
-          style={{ width: 50 }}
-        />
-      ),
+      render: (src) => <img src={src} alt="Product" style={{ width: 50 }} />,
     },
     {
       title: "ĐVT",
@@ -264,7 +248,8 @@ function EditReturnGoods() {
   ];
   const [printingHouses, setPrintingHouses] = useState([]);
   const [selectedPrinters, setSelectedPrinters] = useState({}); // Lưu nhà in được chọn
-  const [valueDelivery, setValueDelivery] = useState(0);
+  const [selectedDates1, setSelectedDates1] = useState({});
+
   // Gọi API để lấy danh sách nhà in
   const fetchPrintingHouses = async () => {
     try {
@@ -329,7 +314,7 @@ function EditReturnGoods() {
           <Col>
             <Statistic
               title="Trạng thái"
-              valueRender={() => <Tag color="red">Đã trả hàng</Tag>}
+              valueRender={() => <Tag color="green">Đã hoàn thành</Tag>}
             />
           </Col>
         </Space>
@@ -444,12 +429,6 @@ function EditReturnGoods() {
               <Text>{vat}%</Text>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <Text>Chi phí giao hàng:</Text>
-              <Text>
-                {new Intl.NumberFormat("vi-VN").format(valueDelivery)} đ
-              </Text>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
               <Text strong>Tổng cộng:</Text>
               <Text>
                 {new Intl.NumberFormat("vi-VN").format(totalAmount)} đ
@@ -467,7 +446,10 @@ function EditReturnGoods() {
               }}
             >
               <Text>Còn lại:</Text>
-              <Text> {new Intl.NumberFormat("vi-VN").format(new1)} đ </Text>
+              <Text>
+                {" "}
+                {new Intl.NumberFormat("vi-VN").format(remainingAmount)} đ{" "}
+              </Text>
             </div>
           </Space>
 
@@ -486,4 +468,4 @@ function EditReturnGoods() {
   );
 }
 
-export default EditReturnGoods;
+export default OrderDelete;

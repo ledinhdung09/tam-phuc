@@ -21,7 +21,7 @@ function Category() {
 
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
-  const [pageSize, setPageSize] = useState(3); // Quản lý số lượng bản ghi mỗi trang
+  const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
   const [total, setTotal] = useState(0); // Tổng số bản ghi
   const fetchData = async () => {
     try {
@@ -236,11 +236,7 @@ function Category() {
               </Row>
               <Row gutter={16}>
                 <Col flex={1}>
-                  <Form.Item
-                    name="description_category"
-                    label="Mô tả"
-                    rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
-                  >
+                  <Form.Item name="description_category" label="Mô tả">
                     <Input.TextArea placeholder="Nhập mô tả" rows={3} />
                   </Form.Item>
                 </Col>

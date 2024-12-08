@@ -14,10 +14,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getAllCategoryAPI,
   getDataProductByIdAPI,
+  getProductOrderAPI,
   postEditProductAPI,
 } from "../../apis/handleDataAPI";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Content } = Layout;
 const { Option } = Select;
 
@@ -31,6 +32,7 @@ function EditProducts() {
   const { id } = useParams();
 
   const [categories, setCategories] = useState([]);
+  const [name, setName] = useState();
   const [rows, setRows] = useState([{ key: Date.now() }]);
   const [hasRules, setHasRules] = useState(null);
 
@@ -48,7 +50,7 @@ function EditProducts() {
         const response = await getDataProductByIdAPI(token, id);
         const data = response.data.product;
         console.log(data);
-
+        setName(data.product_name);
         // Load product data into the form
         form.setFieldsValue({
           product_name: data.product_name,
@@ -110,7 +112,9 @@ function EditProducts() {
       category_id: data.category_name,
       product_name: data.product_name,
       rules: data.rules,
-      notes: data.notes,
+      notes: data.notes !== undefined ? data.notes : "",
+      price: data.price !== undefined ? data.price : 0,
+      plusPrice: data.plusPrice !== undefined ? data.plusPrice : 0,
       pricing: [],
     };
 
@@ -118,10 +122,10 @@ function EditProducts() {
       rows.forEach((_, index) => {
         if (data[`quantity_${index}`] !== undefined) {
           transformedData.pricing.push({
-            quantity: data[`quantity_${index}`],
-            price: parseFloat(data[`price_${index}`]),
-            note: data[`note_${index}`],
-            plusPrice: data[`plusPrice_${index}`],
+            quantity: data[`quantity_${index}`] || 0,
+            price: parseFloat(data[`price_${index}`]) || 0,
+            note: data[`note_${index}`] || "", // Nếu cần, bạn có thể để chuỗi rỗng ở đây
+            plusPrice: data[`plusPrice_${index}`] || 0,
           });
         }
       });
@@ -156,6 +160,33 @@ function EditProducts() {
     form.resetFields();
     setHasRules(null);
   };
+  const [orders, setOrders] = useState([]);
+
+  const fetchData = async (name) => {
+    try {
+      const response = await getProductOrderAPI(token, name);
+      console.log(response);
+
+      // Lọc các đơn hàng có order_status khác 6
+      const filteredOrders = response.data.orders.filter(
+        (item) => item.order_status !== "6"
+      );
+
+      // Lấy danh sách order_id từ các đơn hàng đã lọc
+      const newOrders = filteredOrders.map((item) => item.order_id);
+
+      setOrders(newOrders); // Cập nhật danh sách đơn hàng
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (name && token) {
+      fetchData(name);
+    }
+    console.log(orders);
+  }, [name, token]);
 
   return (
     <Form form={form} layout="vertical" autoComplete="off">
@@ -346,6 +377,37 @@ function EditProducts() {
             </Col>
           </Row>
         )}
+
+        <Row>
+          <Col
+            style={{
+              border: "1px solid black",
+              padding: "1rem",
+              borderRadius: "10px",
+              flex: 2,
+              marginRight: 20,
+              marginTop: 20,
+            }}
+          >
+            <Title level={4}>Lịch sử đơn hàng có chứa sản phẩm</Title>
+            <Row gutter={[16, 16]}>
+              {orders.map((order, index) => (
+                <Col key={index} xs={24} sm={12} md={8} lg={6}>
+                  {/* <Text style={{ color: "#52c41a" }}>Đơn hàng #{order}</Text> */}
+                  <Link
+                    to={`/don-hang/chi-tiet-don-hang/${order}`}
+                    style={{ color: "#52c41a", textDecoration: "none" }}
+                  >
+                    <Text style={{ color: "#52c41a" }}>Đơn hàng #{order}</Text>
+                  </Link>
+                </Col>
+              ))}
+            </Row>
+            {/* <div style={{ textAlign: "center", marginTop: "20px" }}>
+              <Button type="link">Tải thêm</Button>
+            </div> */}
+          </Col>
+        </Row>
       </Content>
     </Form>
   );

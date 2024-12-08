@@ -16,7 +16,7 @@ function PrintingHouse() {
 
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
-  const [pageSize, setPageSize] = useState(3); // Quản lý số lượng bản ghi mỗi trang
+  const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
   const [total, setTotal] = useState(0); // Tổng số bản ghi
 
   // Hàm gọi API

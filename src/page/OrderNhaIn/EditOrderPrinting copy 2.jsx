@@ -17,38 +17,43 @@ import {
   Card,
   Popconfirm,
 } from "antd";
-import {
-  PrinterOutlined,
-  DeleteOutlined,
-  CloudDownloadOutlined,
-} from "@ant-design/icons";
+import { PrinterOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  getDataPrintIdAPI,
   getDataOrdersByIdAPI,
   getDataProductByIdAPI,
   postDataPrintAPI,
   getDataCustomerIdAPI,
   updateOrdersAPI,
   updateOrdersStatusAPI,
-  updateOrdersShipAPI,
 } from "../../apis/handleDataAPI";
 import { useEffect, useState } from "react";
 import moment from "moment";
-
+import dayjs from "dayjs";
+import Bill from "../Order/Bill";
 const { Title, Text } = Typography;
 const { Content } = Layout;
 
-function EditImportAndDeliveryGoods() {
+function EditOrderPrinting() {
   const [form] = Form.useForm();
+
+  const handlePrint = () => {
+    const printContent = document.getElementById("print-area").innerHTML;
+    const printWindow = window.open("", "", "height=600,width=800");
+    printWindow.document.write(
+      "<html><head><title>Phiếu In</title></head><body>"
+    );
+    printWindow.document.write(printContent);
+    printWindow.document.write("</body></html>");
+    printWindow.document.close();
+    printWindow.print();
+  };
   const calculateTotalPrice = (dataSource) => {
     return dataSource.reduce((total, record) => total + record.totalPrice, 0);
   };
   const { id } = useParams();
   const [dataProducts, setDataProducts] = useState([]);
-  const [dataOrder, setDataOrder] = useState([]);
   const [mainTableData, setMainTableData] = useState([]);
-  const [totalMoney, setTotalMoney] = useState();
   const [order_id, setOrder_id] = useState();
   const [dateOrder, setDateOrder] = useState();
   const [promotion, setPromotion] = useState(0); // Khuyến mãi
@@ -59,108 +64,142 @@ function EditImportAndDeliveryGoods() {
   const totalAmount = totalProductPrice - promotion + vatAmount; // Tổng cộng
   const remainingAmount = totalAmount - deposit; // Còn lại
   const [new1, setNew1] = useState();
+  const [new2, setNew2] = useState();
+  const [new3, setNew3] = useState();
   const [estimatedDate, setEstimatedDate] = useState(""); // Trạng thái lưu ngày dự kiến
-  const [customerId, setCustomerId] = useState(""); // Trạng thái lưu ngày dự kiến
+  const [customerId, setCustomerId] = useState(); // Trạng thái lưu ngày dự kiến
   const [customerName, setCustomerName] = useState(""); // Trạng thái lưu ngày dự kiến
   const [notes, setNotes] = useState(""); // Trạng thái lưu ngày dự kiến
-  const [dataProductDetail, setDataProductDetail] = useState([]);
+  const [valueDelivery, setValueDelivery] = useState(0);
+  const [pricePrints, setPricePrints] = useState({});
+  const [quantityPrints, setQuantityPrints] = useState({});
+  const [phoneCustomer, setPhoneCustomer] = useState("");
+  const [addressCustomer, setAddressCustomer] = useState("");
 
   useEffect(() => {
-    console.log(remainingAmount);
-    console.log(valueDelivery);
     setNew1(parseFloat(remainingAmount) + parseFloat(valueDelivery));
-  });
+  }, [remainingAmount, valueDelivery]);
 
   useEffect(() => {
+    // Fetch order data when `id` changes
     const fetchDataOrderById = async () => {
       try {
         const token = localStorage.getItem("authToken");
         const response = await getDataOrdersByIdAPI(token, id);
         console.log(response);
         const products = JSON.parse(response.data.order.product_details);
-        setDataOrder(response);
-        setTotalMoney(response.data.order.total);
         setOrder_id(response.data.order.order_id);
         setDateOrder(response.data.order.order_date);
         setVAT(response.data.order.vat);
         setDeposit(response.data.order.deposit);
         setPromotion(response.data.order.promotion);
-        console.log("Check Products: ", products);
         setDataProducts(products);
-        setCustomerId(response.data.order.customer_id); // Cập nhật customerId
-        setNotes(response.data.order.notes); // Cập nhật customerId
-        const estimatedDateString = response.data.order.estimated_delivery_date;
-        console.log(estimatedDateString);
+        setNew3(response.data.order.total);
+        setNew2(response.data.order.total);
         setValueDelivery(response.data.order.price_ship);
+        setCustomerId(response.data.order.customer_id);
+        setNotes(response.data.order.notes);
+        const estimatedDateString = response.data.order.estimated_delivery_date;
         setEstimatedDate(moment(estimatedDateString));
-        console.log(notes);
       } catch (error) {
         console.error("Error fetching order data:", error);
       }
     };
-    fetchDataOrderById();
+
+    if (id) {
+      fetchDataOrderById();
+    }
   }, [id]);
 
+  const handleSelectCustomer = (customer) => {
+    console.log(customer);
+    setPhoneCustomer(customer.phone);
+    setCustomerName(customer.customer_name);
+    setAddressCustomer(
+      customer.address +
+        " " +
+        customer.ward +
+        " " +
+        customer.district +
+        " " +
+        customer.city
+    );
+  };
+
   useEffect(() => {
+    // Fetch customer data when `customerId` changes
+    console.log(customerId);
     const fetchData = async () => {
-      if (!customerId) return; // Không thực hiện nếu customerId chưa được gán
+      if (!customerId) return;
+
       try {
         const token = localStorage.getItem("authToken");
         const response = await getDataCustomerIdAPI(token, customerId);
         console.log(response);
-        console.log(response.data.data.customer_name);
-        setCustomerName(response.data.data.customer_name); // Giả sử API trả về customer_name
+        setPhoneCustomer(response.data.data.phone);
+        handleSelectCustomer(response.data.data);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        alert("Failed to fetch data. Please try again.");
+        console.error("Error fetching customer data:", error);
+        alert("Failed to fetch customer data. Please try again.");
       }
     };
-    fetchData();
-  }, [customerId]); // Thêm customerId vào danh sách phụ thuộc
+
+    if (customerId) {
+      fetchData();
+    }
+  }, [customerId]);
 
   useEffect(() => {
-    if (dataProducts.length > 0) {
-      console.log(dataProducts);
-      const fetchProductDetails = async () => {
-        try {
-          const token = localStorage.getItem("authToken");
-          const details = await Promise.all(
-            dataProducts.map(async (product) => {
-              const response = await getDataProductByIdAPI(
-                token,
-                product.product_code
-              );
-              const productData = response.data.product;
-              const printerName =
-                printingHouses.find(
-                  (printer) => printer.id === product.id_print
-                )?.company_name || "Chọn nhà in"; // Lấy tên nhà in hoặc hiển thị mặc định
-              return {
-                key: productData.id,
-                productDetail: {
-                  name: productData.product_name,
-                  notes: productData.notes,
-                },
-                unit: productData.rules,
-                image: product.avatar,
-                quantity: product.quantity,
-                unitPrice: product.price,
-                totalPrice:
-                  product.quantity * product.price +
-                  parseFloat(product.plus_price),
-                printer: printerName, // Gán tên nhà in
-                date: product.date,
-              };
-            })
-          );
-          setMainTableData(details);
-        } catch (error) {
-          console.error("Error fetching product details:", error);
-        }
-      };
-      fetchProductDetails();
-    }
+    // Fetch product details when `dataProducts` changes
+    const fetchProductDetails = async () => {
+      if (dataProducts.length === 0) return;
+
+      try {
+        const token = localStorage.getItem("authToken");
+        const details = await Promise.all(
+          dataProducts.map(async (product) => {
+            const response = await getDataProductByIdAPI(
+              token,
+              product.product_code
+            );
+            const productData = response.data.product;
+            const quantity = product.quantity_print || product.quantity;
+            const pricePrint = product.price_print || product.price;
+
+            setQuantityPrints((prev) => ({
+              ...prev,
+              [product.product_code]: quantity,
+            }));
+            setPricePrints((prev) => ({
+              ...prev,
+              [product.product_code]: pricePrint,
+            }));
+
+            return {
+              key: productData.id,
+              productDetail: {
+                name: productData.product_name,
+                notes: productData.notes,
+              },
+              unit: productData.rules,
+              image: product.avatar,
+              quantity,
+              pricePrint,
+              totalPrice:
+                quantity * pricePrint + parseFloat(product.plus_price),
+            };
+          })
+        );
+
+        setMainTableData(details);
+      } catch (error) {
+        console.error("Error fetching product details:", error);
+      }
+    };
+
+    fetchProductDetails();
   }, [dataProducts]);
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     if (isNaN(date)) return "Ngày không hợp lệ";
@@ -173,6 +212,8 @@ function EditImportAndDeliveryGoods() {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  const [cate_id, setCate_id] = useState(localStorage.getItem("cate_id"));
 
   const columns = [
     {
@@ -219,11 +260,16 @@ function EditImportAndDeliveryGoods() {
       title: "Số lượng",
       dataIndex: "quantity",
       key: "quantity",
-      render: (quantity) => (
+      render: (quantity, record) => (
         <InputNumber
           min={1}
-          disabled
-          defaultValue={quantity}
+          value={quantityPrints[record.key] || quantity} // Sử dụng giá trị từ trạng thái
+          onChange={(value) => {
+            setQuantityPrints((prev) => ({
+              ...prev,
+              [record.key]: value, // Cập nhật giá trị riêng cho từng hàng
+            }));
+          }}
           style={{ width: 60 }}
         />
       ),
@@ -232,9 +278,39 @@ function EditImportAndDeliveryGoods() {
       title: "Đơn giá",
       dataIndex: "unitPrice",
       key: "unitPrice",
-      render: (price) => (
-        <Input defaultValue={price} disabled prefix="đ" style={{ width: 80 }} />
-      ),
+      render: (price, record) => {
+        const value = pricePrints[record.key] || price; // Lấy giá trị từ pricePrints hoặc dùng giá trị mặc định
+
+        return (
+          <Input
+            defaultValue={value} // Đảm bảo giá trị là số hoặc chuỗi
+            prefix="đ"
+            style={{ width: 120 }}
+            onChange={(e) => {
+              const newValue = e.target.value;
+
+              // Cập nhật giá trị mới
+              setPricePrints((prev) => ({
+                ...prev,
+                [record.key]: newValue,
+              }));
+              setMainTableData((prev) =>
+                prev.map((item) =>
+                  item.key === record.key
+                    ? {
+                        ...item,
+                        unitPrice: newValue,
+                        totalPrice:
+                          item.quantity * newValue +
+                          parseFloat(item.plus_price), // Cập nhật thành tiền
+                      }
+                    : item
+                )
+              );
+            }}
+          />
+        );
+      },
     },
     {
       title: "Nhà in",
@@ -243,12 +319,19 @@ function EditImportAndDeliveryGoods() {
       render: (_, record) =>
         printingHouses.length > 0 ? (
           <Select
-            disabled
-            value={record.printer || "Chọn nhà in"} // Sử dụng giá trị từ record
+            value={
+              selectedPrinters[record.key]
+                ? printingHouses.find(
+                    (printer) => printer.id === selectedPrinters[record.key]
+                  )?.company_name
+                : "Chọn nhà in"
+            }
             onChange={(value) => handlePrinterChange(record.key, value)}
+            style={{ width: 150 }}
+            disabled={cate_id === "2"}
           >
             {printingHouses.map((printer) => (
-              <Select.Option key={printer.id} value={printer.id}>
+              <Select.Option key={printer.id} value={printer.company_name}>
                 {printer.company_name}
               </Select.Option>
             ))}
@@ -261,17 +344,32 @@ function EditImportAndDeliveryGoods() {
       title: "Thời gian",
       dataIndex: "date",
       key: "date",
-      render: (_, record) => (
-        <span>{record.date}</span> // Hiển thị ngày định dạng
-      ),
+      render: (_, record) => {
+        const dateValue = selectedDates1[record.key] || record.date;
+        return (
+          <DatePicker
+            style={{ width: 120 }}
+            value={
+              dateValue && dayjs(dateValue, "YYYY-MM-DD").isValid()
+                ? dayjs(dateValue, "YYYY-MM-DD")
+                : null
+            }
+            onChange={(date) => handleDateChangeProduct(date, record.key)}
+          />
+        );
+      },
     },
     {
       title: "Thành tiền",
       dataIndex: "totalPrice",
       key: "totalPrice",
-      render: (total) => (
-        <Text strong>{new Intl.NumberFormat("vi-VN").format(total)} đ</Text>
-      ),
+      render: (total, record) => {
+        return (
+          <Text strong>
+            {new Intl.NumberFormat("vi-VN").format(record.totalPrice)} đ
+          </Text>
+        );
+      },
     },
   ];
   const [printingHouses, setPrintingHouses] = useState([]);
@@ -289,11 +387,29 @@ function EditImportAndDeliveryGoods() {
       console.error("Lỗi khi lấy dữ liệu nhà in:", error);
     }
   };
+  const handleDateChangeProduct = (date, recordKey) => {
+    const formattedDate = date ? dayjs(date).format("YYYY-MM-DD") : null;
+    setSelectedDates1((prev) => ({
+      ...prev,
+      [recordKey]: formattedDate,
+    }));
+  };
 
   // Gọi fetchPrintingHouses khi component được mount
   useEffect(() => {
     fetchPrintingHouses();
   }, []);
+  useEffect(() => {
+    if (dataProducts.length > 0 && printingHouses.length > 0) {
+      const initialPrinters = dataProducts.reduce((acc, product) => {
+        if (product.id_print) {
+          acc[product.product_code] = product.id_print; // Key là product_code hoặc id sản phẩm
+        }
+        return acc;
+      }, {});
+      setSelectedPrinters(initialPrinters);
+    }
+  }, [dataProducts, printingHouses]);
 
   // Cập nhật giá trị nhà in được chọn
   const handlePrinterChange = (recordKey, selectedValue) => {
@@ -309,16 +425,51 @@ function EditImportAndDeliveryGoods() {
   };
 
   const navigate = useNavigate();
+  const [mergedProductDetails, setMergedProductDetails] = useState([]);
+  useEffect(() => {
+    const formattedData = dataProducts.map((product) => {
+      const productCode = product.product_code;
+      return {
+        ...product,
+        id_print: selectedPrinters[productCode] || null,
+        date: selectedDates1[productCode]
+          ? moment(selectedDates1[productCode], "YYYY-MM-DD").format(
+              "DD-MM-YYYY"
+            )
+          : null,
+        quantity_print: quantityPrints[productCode],
+        price_print: pricePrints[productCode],
+      };
+    });
+
+    setMergedProductDetails(formattedData.flat());
+  }, [
+    selectedPrinters,
+    selectedDates1,
+    dataProducts,
+    pricePrints,
+    quantityPrints,
+  ]); // Theo dõi các thay đổi
   const handleUpdateOrder = async () => {
     const token = localStorage.getItem("authToken");
-    console.log(valueDelivery);
-    console.log(new1);
 
+    // Tạo đối tượng cuối cùng
+    const result = {
+      order_id: id, // ID đơn hàng (cố định hoặc lấy từ logic khác)
+      session_token: token,
+      product_details: mergedProductDetails, // Thêm danh sách sản phẩm đã format
+      price_ship: valueDelivery,
+      order_status: 7,
+      total_print: new1,
+      total: new2,
+    };
+
+    console.log(result);
     try {
-      const response = await updateOrdersStatusAPI(token, id, 3);
+      const response = await updateOrdersAPI(result);
       console.log(response);
       if (response.data.success == true) {
-        navigate("/nhap-va-giao-hang");
+        navigate("/dat-hang-nha-in");
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -326,24 +477,48 @@ function EditImportAndDeliveryGoods() {
     }
   };
 
-  const handleUpdateOrderFail = async () => {
+  const handleSubmitEdit = async () => {
     const token = localStorage.getItem("authToken");
-    console.log(valueDelivery);
-    console.log(new1);
 
+    // Tạo đối tượng cuối cùng
+    const result = {
+      order_id: id, // ID đơn hàng (cố định hoặc lấy từ logic khác)
+      session_token: token,
+      product_details: mergedProductDetails, // Thêm danh sách sản phẩm đã format
+      price_ship: valueDelivery,
+      total_print: new1,
+      order_status: 2,
+      total: new2,
+    };
+
+    console.log(result);
     try {
-      const response = await updateOrdersStatusAPI(token, id, 5);
+      const response = await updateOrdersAPI(result);
       console.log(response);
       if (response.data.success == true) {
-        navigate("/nhap-va-giao-hang");
+        navigate("/dat-hang-nha-in");
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       alert("Error fetching the form. Please try again.");
     }
+    //Gửi API hoặc sử dụng kết quả (nếu cần)
   };
 
-  const [valueDelivery, setValueDelivery] = useState(0);
+  // Hàm xử lý khi người dùng thay đổi giá trị
+  const handleChange = (e) => {
+    const deliveryCost = parseFloat(e.target.value) || 0; // Lấy chi phí vận chuyển từ input
+    setValueDelivery(e.target.value); // Cập nhật giá trị nhập vào
+    const updatedRemainingAmount = totalAmount + deliveryCost - deposit; // Tính lại giá trị còn lại
+    setNew1(updatedRemainingAmount); // Cập nhật giá trị còn lại
+    const total1 = parseFloat(new3) + deliveryCost - valueDelivery;
+    setNew2(total1); // Cập nhật giá trị còn lại
+  };
+
+  // Hàm xử lý khi người dùng rời khỏi ô input
+  const handleBlur = () => {
+    setValueDelivery(valueDelivery);
+  };
 
   return (
     <Content
@@ -379,17 +554,22 @@ function EditImportAndDeliveryGoods() {
           <Col>
             <Statistic
               title="Trạng thái"
-              valueRender={() => <Tag color="green">Đang đặt nhà in</Tag>}
+              valueRender={() => <Tag color="green">Đang báo giá</Tag>}
             />
           </Col>
         </Space>
-        <Button
-          type="primary"
-          icon={<PrinterOutlined />}
-          style={{ float: "right" }}
-        >
-          In
-        </Button>
+        <div style={{ float: "right", display: "flex" }}>
+          <Button
+            type="primary"
+            onClick={handlePrint}
+            // onClick={() => {
+            //   alert("Đang bảo trì");
+            // }}
+            icon={<PrinterOutlined />}
+          >
+            In
+          </Button>
+        </div>
       </div>
 
       <Card style={{ margin: "20px auto", padding: "20px", borderRadius: 10 }}>
@@ -407,7 +587,7 @@ function EditImportAndDeliveryGoods() {
           style={{
             padding: "1rem",
             borderRadius: "10px",
-            flex: 4,
+            flex: 2,
             marginRight: 20,
             maxHeight: 250,
             background: colorBgContainer,
@@ -465,7 +645,7 @@ function EditImportAndDeliveryGoods() {
           style={{
             padding: "1rem",
             borderRadius: "10px",
-            flex: 3,
+            flex: 1,
             height: "fit-content",
             background: colorBgContainer,
           }}
@@ -489,16 +669,28 @@ function EditImportAndDeliveryGoods() {
               <Text>Khuyến mãi:</Text>
               <Text> {new Intl.NumberFormat("vi-VN").format(promotion)} đ</Text>
             </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text>Chi phí giao hàng:</Text>
+              <Input
+                style={{
+                  width: "200px",
+                  textAlign: "right",
+                }}
+                value={valueDelivery}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                placeholder="Nhập số tiền"
+              ></Input>{" "}
+            </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <Text>VAT:</Text>
               <Text>{vat}%</Text>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <Text>Chi phí giao hàng:</Text>
-              <Text>
-                {" "}
-                {new Intl.NumberFormat("vi-VN").format(valueDelivery)} đ{" "}
-              </Text>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <Text strong>Tổng cộng:</Text>
@@ -531,29 +723,21 @@ function EditImportAndDeliveryGoods() {
               marginBottom: "1rem",
             }}
           />
+
           <Row
             style={{
               gap: 20,
             }}
           >
             <Col>
-              <Popconfirm
-                title="Xác nhận giao hàng không thành công?"
-                onConfirm={handleUpdateOrderFail} // Hàm được gọi khi nhấn "Xóa"
-                okText="Xác nhận"
-                cancelText="Hủy"
-                okButtonProps={{ type: "primary", danger: true }} // Nút "Xóa" màu đỏ
-                cancelButtonProps={{ type: "default" }} // Nút "Hủy" mặc định
+              <Button
+                Outlined
+                color="primary"
+                onClick={handleSubmitEdit}
+                style={{}}
               >
-                <Button
-                  Outlined
-                  color="primary"
-                  style={{ fontSize: "14px" }}
-                  danger
-                >
-                  GIAO HÀNG KHÔNG THÀNH CÔNG
-                </Button>
-              </Popconfirm>
+                LƯU THÔNG TIN
+              </Button>
             </Col>
 
             <Col>
@@ -561,18 +745,37 @@ function EditImportAndDeliveryGoods() {
                 type="primary"
                 style={{
                   float: "right",
-                  fontSize: "14px",
                 }}
                 onClick={handleUpdateOrder}
               >
-                GIAO HÀNG THÀNH CÔNG
+                XÁC NHẬN GIAO HÀNG
               </Button>
             </Col>
           </Row>
         </Col>
       </Row>
+      <div id="print-area" style={{ display: "none" }}>
+        {console.log(phoneCustomer)}
+        {customerName &&
+          customerName !== "" &&
+          id &&
+          id !== "" &&
+          mainTableData &&
+          phoneCustomer &&
+          phoneCustomer !== "" &&
+          addressCustomer &&
+          addressCustomer !== "" && (
+            <Bill
+              name={customerName}
+              orderId={id}
+              data={mainTableData}
+              phone={phoneCustomer}
+              address={addressCustomer}
+            />
+          )}
+      </div>
     </Content>
   );
 }
 
-export default EditImportAndDeliveryGoods;
+export default EditOrderPrinting;
