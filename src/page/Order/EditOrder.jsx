@@ -156,15 +156,24 @@ function EditOrder() {
       key: "productDetails",
       render: (details) => (
         <div>
-          <Text strong style={{ color: "#1890ff" }}>
-            {details.name}
-          </Text>
-          <div
-            style={{ fontSize: 12, color: "#666", marginTop: 4 }}
-            dangerouslySetInnerHTML={{
-              __html: details.notes.replace(/\n/g, "<br>"),
-            }}
-          ></div>
+          <div>
+            <Text strong style={{ color: "#1890ff" }}>
+              {details.name}
+            </Text>
+
+            <div
+              style={{
+                fontSize: 12,
+                color: "#666",
+                marginTop: 4,
+                maxHeight: "50px", // Giới hạn chiều cao
+                overflowY: "auto", // Hiển thị thanh scroll dọc
+              }}
+              dangerouslySetInnerHTML={{
+                __html: details.notes.replace(/\n/g, "<br>"),
+              }}
+            ></div>
+          </div>
         </div>
       ),
     },
@@ -173,38 +182,35 @@ function EditOrder() {
       dataIndex: "image",
       key: "image",
       render: (image, record) => (
-        console.log(record),
-        (
-          <Upload
-            action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
-            listType="picture-card"
-            fileList={record.fileList}
-            onChange={({ fileList }) => handleFileChange(record.key, fileList)}
-          >
-            {record.fileList.length < 1 && (
-              <div>
-                <div style={{ marginTop: 8 }}>
-                  {image ? (
-                    <img
-                      src={
-                        "https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/" +
-                        image
-                      }
-                      alt="avatar"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    uploadButton
-                  )}
-                </div>
+        <Upload
+          action="https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload"
+          listType="picture-card"
+          fileList={record.fileList}
+          onChange={({ fileList }) => handleFileChange(record.key, fileList)}
+        >
+          {record.fileList.length < 1 && (
+            <div>
+              <div style={{ marginTop: 8 }}>
+                {image ? (
+                  <img
+                    src={
+                      "https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api/" +
+                      image
+                    }
+                    alt="avatar"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  uploadButton
+                )}
               </div>
-            )}
-          </Upload>
-        )
+            </div>
+          )}
+        </Upload>
       ),
     },
     {
@@ -287,8 +293,6 @@ function EditOrder() {
   };
 
   const addProductToTable = (product) => {
-    console.log(product);
-
     // Tìm số lượng và giá tối thiểu
     const minQuantity =
       product.pricing && product.pricing.length > 0
@@ -332,7 +336,6 @@ function EditOrder() {
     };
 
     // Kiểm tra nếu sản phẩm đã tồn tại
-    console.log(mainTableData);
     if (!mainTableData.find((item) => item.key === product.key)) {
       // Thêm sản phẩm mới nếu chưa tồn tại
       setMainTableData([...mainTableData, formattedProduct]);
@@ -352,6 +355,9 @@ function EditOrder() {
   const [taxcodeCustomer, setTaxcodeCustomer] = useState("");
   const [phoneCustomer, setPhoneCustomer] = useState("");
   const [addressCustomer, setAddressCustomer] = useState("");
+  const [name1, setName1] = useState("");
+  const [address1, setAddress1] = useState("");
+  const [phone1, setPhone1] = useState("");
   const [options, setOptions] = useState([]);
   const navigate = useNavigate();
   const showModal = () => {
@@ -359,7 +365,7 @@ function EditOrder() {
   };
 
   const [order, setOrder] = useState({
-    id: "#13279xxxx",
+    id: "",
     date: moment().format("YYYY/MM/DD"), // Ngày mặc định là hôm nay
     customerName: "",
     phone: "",
@@ -415,15 +421,10 @@ function EditOrder() {
     }
   };
 
-  const handleDateChange = (date, dateString) => {
-    setSelectedDate(dateString);
-  };
-
   useEffect(() => {
     fetchData();
   }, [token]);
   const formatTableData = (dataSource) => {
-    console.log(dataSource);
     return dataSource.map((row) => ({
       product_code: row.key,
       quantity: row.quantity,
@@ -433,7 +434,12 @@ function EditOrder() {
     }));
   };
 
+  const [taxCode, setTaxCode] = useState();
+  const [email, setEmail] = useState();
+  const [company_name, setCompany_name] = useState();
+
   const handleSelectCustomer = (customer) => {
+    console.log(customer);
     setSelectedCustomer(customer);
     setNameCustomer(customer.customer_name);
     setIdCustomer(customer.id);
@@ -441,6 +447,10 @@ function EditOrder() {
     setTaxcodeCustomer(customer.tax_code);
     setPhoneCustomer(customer.phone);
     setNote(customer.note);
+    setTaxCode(customer.tax_code);
+    setEmail(customer.company_email);
+    setCompany_name(customer.company_name);
+
     setAddressCustomer(
       customer.address +
         " " +
@@ -472,11 +482,9 @@ function EditOrder() {
       promotion: discount,
       order_id: id,
     }; // Thêm idCustomer vào formData
-    console.log(formData); // Kiểm tra kết quả
 
     try {
       const response = await updateDataOrdersAPI(formData);
-      console.log(response);
       if (response.data.success == true) {
         navigate("/don-hang");
       }
@@ -488,7 +496,7 @@ function EditOrder() {
   const handleSubmitEdit = async () => {
     let formData = form.getFieldsValue(); // Lấy dữ liệu từ form
     const formattedData = formatTableData(mainTableData);
-
+    console.log(selectedDat1);
     formData = {
       ...formData,
       customer_id: idCustomer,
@@ -496,7 +504,7 @@ function EditOrder() {
       session_token: token,
       processing_employee_id: selectedEmployee,
       design_confirm_employee_id: selectedEmployeeDesign,
-      estimated_delivery_date: selectedDate,
+      estimated_delivery_date: selectedDat1.format("YYYY-MM-DD"),
       product_details: formattedData,
       total: remainingAmount,
       vat: vat,
@@ -504,11 +512,9 @@ function EditOrder() {
       promotion: discount,
       order_id: id,
     }; // Thêm idCustomer vào formData
-    console.log(formData); // Kiểm tra kết quả
 
     try {
       const response = await updateDataOrdersAPI(formData);
-      console.log(response);
       if (response.data.success == true) {
         navigate("/don-hang");
       }
@@ -575,8 +581,14 @@ function EditOrder() {
   const [customerId, setCustomerId] = useState("");
   const [dataProducts, setDataProducts] = useState("");
   const handleDateChange1 = (date) => {
-    setSelectedDate1(date); // Cập nhật ngày được chọn
+    if (date) {
+      setSelectedDate1(date); // Gán ngày mới nếu có giá trị
+    } else {
+      setSelectedDate1(null); // Xóa giá trị ngày nếu người dùng xóa
+    }
   };
+
+  const [orderStatus, setOrderStatus] = useState("");
   useEffect(() => {
     const fetchDataOrderById = async () => {
       try {
@@ -607,7 +619,11 @@ function EditOrder() {
         setSelectedEmployeeDesign(data.design_confirm_employee_id);
         setOrder_id(data.order_id);
         setDateOrder(data.order_date);
+        setOrderStatus(data.order_status);
         setSelectedDate1(moment(data.estimated_delivery_date, "YYYY-MM-DD"));
+        setName1(data.recipient_name);
+        setAddress1(data.delivery_address);
+        setPhone1(data.recipient_phone);
 
         // Kiểm tra và xử lý dữ liệu sản phẩm
         const productDetails = JSON.parse(data.product_details || "[]");
@@ -629,16 +645,13 @@ function EditOrder() {
       const fetchProductDetails = async () => {
         try {
           const token = localStorage.getItem("authToken");
-          console.log(dataProducts);
           const formattedData = await Promise.all(
             dataProducts.map(async (product, index) => {
               const response = await getDataProductByIdAPI(
                 token,
                 product.product_code
               );
-              console.log(product);
               const productData = response.data.product;
-              console.log(productData);
               return {
                 key: productData.id,
                 productDetails: {
@@ -697,7 +710,6 @@ function EditOrder() {
     const token = localStorage.getItem("authToken");
     try {
       const response = await updateOrdersStatusAPI(token, id, 4);
-      console.log(response);
       if (response.data.success == true) {
         navigate("/don-hang");
       }
@@ -710,7 +722,6 @@ function EditOrder() {
     const token = localStorage.getItem("authToken");
     try {
       const response = await updateOrdersStatusAPI(token, id, 6);
-      console.log(response);
       if (response.data.success == true) {
         navigate("/don-hang");
       }
@@ -720,7 +731,6 @@ function EditOrder() {
     }
   };
   const updateProductData = (key, field, value, product) => {
-    console.log(product);
     const updatedData = mainTableData.map((item) => {
       if (item.key === key) {
         const updatedItem = {
@@ -765,11 +775,9 @@ function EditOrder() {
               })
               .catch((error) => console.error("Error fetching data:", error));
           } else if (product.multiple_pricing === "0") {
-            console.log(value);
             const plusPrice = parseFloat(product.plusPrice) || 0;
             const unitPrice = item.unitPrice || 0;
             const totalPrice = (value || 1) * unitPrice + plusPrice;
-            console.log(plusPrice);
 
             return {
               ...updatedItem,
@@ -787,6 +795,29 @@ function EditOrder() {
 
     setMainTableData(updatedData);
   };
+  const [nameStatus, setNameStatus] = useState("");
+  useEffect(() => {
+    switch (orderStatus) {
+      case "1":
+        setNameStatus("Đang báo giá");
+        break;
+      case "2":
+        setNameStatus("Đang in");
+        break;
+      case "7":
+        setNameStatus("Đang giao");
+        break;
+      case "5":
+        setNameStatus("Giao hàng thất bại");
+        break;
+      case "3":
+        setNameStatus("Đã hoàn thành");
+        break;
+      case "4":
+        setNameStatus("Đã trả hàng");
+        break;
+    }
+  }, [orderStatus]);
   return (
     <Content
       style={{
@@ -823,7 +854,7 @@ function EditOrder() {
               }}
             >
               <Statistic
-                title="Ngày nhận hàng:"
+                title="Ngày đặt hàng:"
                 value={formatDate(dateOrder)}
                 valueStyle={{ color: "#000", fontWeight: "bold" }}
               />
@@ -835,7 +866,7 @@ function EditOrder() {
                   fontWeight: "bold",
                 }}
                 title="Trạng thái"
-                valueRender={() => <Tag color="green">Đang báo giá</Tag>}
+                valueRender={() => <Tag color="green">{nameStatus}</Tag>}
                 valueStyle={{ color: "#000", fontWeight: "bold" }}
               />
             </Col>
@@ -1213,6 +1244,7 @@ function EditOrder() {
                     value={selectedDat1}
                     style={{ width: "650px" }}
                     onChange={handleDateChange1} // Xử lý sự kiện khi chọn ngày
+                    allowClear
                   />
                 </Space>
               </Col>
@@ -1385,16 +1417,25 @@ function EditOrder() {
           </div>
         </Card>
         <div id="print-area" style={{ display: "none" }}>
-          {console.log(nameCustomer)}
-          {console.log(mainTableData)}
-          {console.log(phoneCustomer)}
-          {console.log(addressCustomer)}
           <Bill
             name={nameCustomer}
-            orderId={order.id}
+            orderId={id}
             data={mainTableData}
             phone={phoneCustomer}
             address={addressCustomer}
+            vat={vat}
+            discount={discount}
+            deposit={deposit}
+            totalAmount={totalAmount}
+            remainingAmount={remainingAmount}
+            order_date={dateOrder}
+            order_date1={selectedDat1?.format("YYYY-MM-DD")}
+            tax_code={taxCode}
+            email={email}
+            company_name={company_name}
+            name1={name1}
+            address1={address1}
+            phone1={phone1}
           />
         </div>
       </Form>

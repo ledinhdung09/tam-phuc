@@ -113,12 +113,12 @@ function SiderDashboard() {
                   height: "100%",
                 }}
                 onClick={() => {
-                  if (cate_id === "1" || cate_id === "2") {
+                  if (cate_id === "2") {
                     alert("Bạn không có quyền truy cập vào");
                   }
                 }}
               >
-                {cate_id === "3" ? (
+                {cate_id === "3" || cate_id === "1" ? (
                   <Link to="/nhap-va-giao-hang">Nhập & giao hàng</Link>
                 ) : (
                   "Nhập & giao hàng"

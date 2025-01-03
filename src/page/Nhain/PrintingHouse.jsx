@@ -15,44 +15,55 @@ function PrintingHouse() {
   } = theme.useToken();
 
   const [data, setData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
-  const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
-  const [total, setTotal] = useState(0); // Tổng số bản ghi
+  const [filteredData, setFilteredData] = useState([]); // Dữ liệu đã lọc
+  const [searchKeyword, setSearchKeyword] = useState(""); // Từ khóa tìm kiếm
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+  const [total, setTotal] = useState(0);
 
-  // Hàm gọi API
-  const fetchData = async (page, pageSize) => {
-    const token = localStorage.getItem("authToken");
-    try {
-      const response = await postDataPrintAPI(token, pageSize, page);
-      console.log(response);
-
-      // Chuyển đổi dữ liệu trả về thành dạng mà bảng yêu cầu
-      const transformedData = response.data.data.map((item) => ({
-        key: item.id,
-        id: item.company_name, // Tên công ty
-        phone: item.phone, // Số điện thoại
-        email: item.email, // Email
-      }));
-
-      setData(transformedData);
-      setTotal(response.data.total); // Cập nhật tổng số bản ghi từ API
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      alert("Error fetching the form. Please try again.");
-    }
-  };
-
-  // Gọi API khi trang hoặc số lượng bản ghi thay đổi
+  // Lấy dữ liệu từ API
   useEffect(() => {
-    fetchData(currentPage, pageSize);
-  }, [currentPage, pageSize]);
+    const fetchData = async () => {
+      const token = localStorage.getItem("authToken");
+      try {
+        const response = await postDataPrintAPI(token);
+        if (response.data.data && response.data.data.length > 0) {
+          const transformedData = response.data.data.map((item) => ({
+            key: item.id,
+            id: item.company_name, // Tên công ty
+            phone: item.phone, // Số điện thoại
+            email: item.email, // Email
+          }));
+
+          setData(transformedData);
+          setFilteredData(transformedData); // Ban đầu hiển thị tất cả dữ liệu
+          setTotal(response.data.data.length);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        alert("Error fetching the form. Please try again.");
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Xử lý tìm kiếm khi từ khóa thay đổi
+  useEffect(() => {
+    const results = data.filter(
+      (item) =>
+        item.id.toLowerCase().includes(searchKeyword.toLowerCase()) || // Tìm kiếm theo tên công ty
+        item.phone.includes(searchKeyword) || // Tìm kiếm theo số điện thoại
+        item.email.toLowerCase().includes(searchKeyword.toLowerCase()) // Tìm kiếm theo email
+    );
+    setFilteredData(results);
+    setTotal(results.length);
+  }, [searchKeyword, data]);
 
   const columns = [
     {
       title: "Tên công ty",
       dataIndex: "id",
       key: "id",
-      width: 200, // Đặt độ rộng cố định (đơn vị là px)
       render: (text, record) => (
         <Link to={`/nha-in/edit-nha-in/${record.key}`}>
           <div style={{ color: "green" }}>{text}</div>
@@ -63,13 +74,11 @@ function PrintingHouse() {
       title: "Số điện thoại",
       dataIndex: "phone",
       key: "phone",
-      width: 150, // Đặt độ rộng cố định
     },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
-      width: 250, // Đặt độ rộng cố định
     },
   ];
 
@@ -120,23 +129,24 @@ function PrintingHouse() {
         >
           <Input
             size="large"
-            placeholder="Tìm kiếm khách hàng"
+            placeholder="Tìm kiếm nhà in"
             style={{
               marginBottom: 20,
             }}
             prefix={<SearchOutlined />}
+            onChange={(e) => setSearchKeyword(e.target.value)} // Cập nhật từ khóa tìm kiếm
           />
           <Table
             columns={columns}
-            dataSource={data}
+            dataSource={filteredData} // Hiển thị dữ liệu đã lọc
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: total, // Tổng số bản ghi để tính số trang
+              total: total,
               position: ["bottomCenter"],
               onChange: (page, pageSize) => {
-                setCurrentPage(page); // Cập nhật trang hiện tại
-                setPageSize(pageSize); // Cập nhật số lượng bản ghi mỗi trang
+                setCurrentPage(page);
+                setPageSize(pageSize);
               },
             }}
           />

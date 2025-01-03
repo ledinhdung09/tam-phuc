@@ -132,12 +132,20 @@ function OrderSave() {
           <Text strong style={{ color: "#1890ff" }}>
             {details.name}
           </Text>
-          <div
-            style={{ fontSize: 12, color: "#666", marginTop: 4 }}
-            dangerouslySetInnerHTML={{
-              __html: details.notes.replace(/\n/g, "<br>"),
-            }}
-          ></div>
+          <div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#666",
+                marginTop: 4,
+                maxHeight: "50px", // Giới hạn chiều cao
+                overflowY: "auto", // Hiển thị thanh scroll dọc
+              }}
+              dangerouslySetInnerHTML={{
+                __html: details.notes.replace(/\n/g, "<br>"),
+              }}
+            ></div>
+          </div>
         </div>
       ),
     },

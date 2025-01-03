@@ -15,21 +15,23 @@ function Client() {
   } = theme.useToken();
 
   const [data, setData] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
-  const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
-  const [total, setTotal] = useState(0); // Tổng số bản ghi
+  const [filteredData, setFilteredData] = useState([]); // Dữ liệu đã lọc
+  const [searchKeyword, setSearchKeyword] = useState(""); // Từ khóa tìm kiếm
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+  const [total, setTotal] = useState(0);
+
   useEffect(() => {
     const handleData = async () => {
       const token = localStorage.getItem("authToken");
       try {
         const response = await postDataCustomerAPI(token);
-        console.log(response);
         if (response.data.data && response.data.data.length > 0) {
           const transformedData = response.data.data.map((item) => ({
-            key: item.id, // Key cho mỗi dòng
-            id: item.customer_name, // Tên khách hàng
-            revenue: item.phone, // Số điện thoại
-            datetime: item.email, // Email
+            key: item.id,
+            id: item.customer_name,
+            revenue: item.phone,
+            datetime: item.email,
             actprocessing_staffion:
               item.address +
               " ," +
@@ -37,7 +39,7 @@ function Client() {
               " ," +
               item.district +
               " ," +
-              item.city, // Ghi chú hoặc thông tin khác
+              item.city,
             orderId: item.latest_order
               ? item.latest_order.order_id
               : "Chưa có đơn",
@@ -46,7 +48,8 @@ function Client() {
           }));
 
           setData(transformedData);
-          setTotal(response.data.data);
+          setFilteredData(transformedData); // Ban đầu hiển thị tất cả dữ liệu
+          setTotal(response.data.data.length);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -55,6 +58,18 @@ function Client() {
     };
     handleData();
   }, []);
+
+  // Xử lý tìm kiếm
+  useEffect(() => {
+    const results = data.filter(
+      (item) =>
+        item.id.toLowerCase().includes(searchKeyword.toLowerCase()) || // Tìm kiếm theo tên khách hàng
+        item.revenue.includes(searchKeyword) || // Tìm kiếm theo số điện thoại
+        item.datetime.toLowerCase().includes(searchKeyword.toLowerCase()) // Tìm kiếm theo email
+    );
+    setFilteredData(results);
+    setTotal(results.length);
+  }, [searchKeyword, data]);
 
   const columns = [
     {
@@ -77,14 +92,12 @@ function Client() {
       dataIndex: "datetime",
       key: "datetime",
     },
-
     {
       title: "Địa chỉ",
       key: "actprocessing_staffion",
       dataIndex: "actprocessing_staffion",
       render: (text) => <div style={{ color: "green" }}>{text}</div>,
     },
-
     {
       title: "Đơn gần nhất",
       key: "orderId",
@@ -158,18 +171,19 @@ function Client() {
               marginBottom: 20,
             }}
             prefix={<SearchOutlined />}
+            onChange={(e) => setSearchKeyword(e.target.value)} // Cập nhật từ khóa tìm kiếm
           />
           <Table
             columns={columns}
-            dataSource={data}
+            dataSource={filteredData} // Hiển thị dữ liệu đã lọc
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: total, // Tổng số bản ghi để tính số trang
+              total: total,
               position: ["bottomCenter"],
               onChange: (page, pageSize) => {
-                setCurrentPage(page); // Cập nhật trang hiện tại
-                setPageSize(pageSize); // Cập nhật số lượng bản ghi mỗi trang
+                setCurrentPage(page);
+                setPageSize(pageSize);
               },
             }}
           />

@@ -15,7 +15,6 @@ import {
   InputNumber,
   DatePicker,
   Card,
-  Popconfirm,
 } from "antd";
 import { PrinterOutlined } from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
@@ -25,7 +24,6 @@ import {
   postDataPrintAPI,
   getDataCustomerIdAPI,
   updateOrdersAPI,
-  updateOrdersStatusAPI,
 } from "../../apis/handleDataAPI";
 import { useEffect, useState } from "react";
 import moment from "moment";
@@ -80,10 +78,20 @@ function EditOrderPrinting() {
   const [customerName, setCustomerName] = useState(""); // Trạng thái lưu ngày dự kiến
   const [notes, setNotes] = useState(""); // Trạng thái lưu ngày dự kiến
   const [valueDelivery, setValueDelivery] = useState(0);
+  const [valueDeliveryOld, setValueDeliveryOld] = useState(0);
   const [pricePrints, setPricePrints] = useState({});
+  const [plusPricePrints, setPlusPricePrints] = useState({});
   const [quantityPrints, setQuantityPrints] = useState({});
   const [phoneCustomer, setPhoneCustomer] = useState("");
   const [addressCustomer, setAddressCustomer] = useState("");
+  const [thanhTien, setThanhTien] = useState(0);
+  const [nameStatus, setNameStatus] = useState("");
+  const [name1, setName1] = useState("");
+  const [address1, setAddress1] = useState("");
+  const [phone1, setPhone1] = useState("");
+  const [taxCode, setTaxCode] = useState();
+  const [email, setEmail] = useState();
+  const [company_name, setCompany_name] = useState();
 
   useEffect(() => {
     setNew1(parseFloat(remainingAmount) + parseFloat(valueDelivery));
@@ -105,13 +113,25 @@ function EditOrderPrinting() {
         setDataProducts(products);
         setNew3(response.data.order.total);
         setNew2(response.data.order.total);
+        switch (response.data.order.order_status) {
+          case "7":
+            setNameStatus("Đã in xong");
+            break;
+          case "2":
+            setNameStatus("Đang in");
+            break;
+        }
         setValueDelivery(response.data.order.price_ship);
+        setValueDeliveryOld(response.data.order.price_ship);
         setCustomerId(response.data.order.customer_id); // Cập nhật customerId
         console.log(response.data.order.customer_id);
         setNotes(response.data.order.notes); // Cập nhật customerId
         const estimatedDateString = response.data.order.estimated_delivery_date;
         console.log(estimatedDateString);
         setEstimatedDate(moment(estimatedDateString));
+        setName1(response.data.order.recipient_name);
+        setAddress1(response.data.order.delivery_address);
+        setPhone1(response.data.order.recipient_phone);
         console.log(notes);
       } catch (error) {
         console.error("Error fetching order data:", error);
@@ -132,6 +152,9 @@ function EditOrderPrinting() {
         " " +
         customer.city
     );
+    setTaxCode(customer.tax_code);
+    setEmail(customer.company_email);
+    setCompany_name(customer.company_name);
   };
   useEffect(() => {
     console.log(customerId);
@@ -151,10 +174,6 @@ function EditOrderPrinting() {
       }
     };
     fetchData();
-    console.log(customerName);
-    console.log(phoneCustomer);
-    console.log(addressCustomer);
-    console.log(mainTableData);
   }, [customerId]);
 
   useEffect(() => {
@@ -178,6 +197,9 @@ function EditOrderPrinting() {
                 ? product.price_print // Nếu tồn tại price_print thì dùng giá trị này
                 : product.price; // Nếu không, lấy giá trị từ price
 
+              const plusPricePrint = product.plusPricePrint
+                ? product.plusPricePrint // Nếu tồn tại price_print thì dùng giá trị này
+                : 0;
               setQuantityPrints((prev) => ({
                 ...prev,
                 [product.product_code]: quantity, // Lưu quantity theo product_code
@@ -186,7 +208,11 @@ function EditOrderPrinting() {
                 ...prev,
                 [product.product_code]: pricePrint, // Lưu quantity theo product_code
               }));
-
+              setPlusPricePrints((prev) => ({
+                ...prev,
+                [product.product_code]: plusPricePrint, // Lưu quantity theo product_code
+              }));
+              console.log(plusPricePrints);
               return {
                 key: productData.id,
                 productDetail: {
@@ -197,8 +223,11 @@ function EditOrderPrinting() {
                 image: product.avatar,
                 quantity,
                 pricePrint,
+                plusPricePrint,
                 totalPrice:
-                  quantity * pricePrint + parseFloat(product.plus_price),
+                  quantity * pricePrint +
+                  parseFloat(product.plus_price) +
+                  parseFloat(plusPricePrint),
                 printer: dataProducts.id_print,
                 date: product.date,
                 plus_price: product.plus_price,
@@ -260,7 +289,13 @@ function EditOrderPrinting() {
           </Text>
 
           <div
-            style={{ fontSize: 12, color: "#666", marginTop: 4 }}
+            style={{
+              fontSize: 12,
+              color: "#666",
+              marginTop: 4,
+              maxHeight: "50px", // Giới hạn chiều cao
+              overflowY: "auto", // Hiển thị thanh scroll dọc
+            }}
             dangerouslySetInnerHTML={{
               __html: details.notes.replace(/\n/g, "<br>"),
             }}
@@ -302,6 +337,22 @@ function EditOrderPrinting() {
               ...prev,
               [record.key]: value, // Cập nhật giá trị riêng cho từng hàng
             }));
+
+            setMainTableData(
+              (
+                prev //console.log(prev)
+              ) =>
+                prev.map((item) =>
+                  item.key === record.key
+                    ? {
+                        ...item,
+                        quantity: value,
+                        totalPrice:
+                          item.pricePrint * value + parseFloat(item.plus_price), // Cập nhật thành tiền
+                      }
+                    : item
+                )
+            );
           }}
           style={{ width: 60 }}
         />
@@ -313,7 +364,6 @@ function EditOrderPrinting() {
       key: "unitPrice",
       render: (price, record) => {
         const value = pricePrints[record.key] || price; // Lấy giá trị từ pricePrints hoặc dùng giá trị mặc định
-
         return (
           <Input
             defaultValue={value} // Đảm bảo giá trị là số hoặc chuỗi
@@ -393,14 +443,56 @@ function EditOrderPrinting() {
       },
     },
     {
+      title: "Cộng thêm",
+      dataIndex: "plusPricePrint",
+      key: "plusPricePrint",
+      render: (price, record) => {
+        const value = plusPricePrints[record.key] || price;
+        return (
+          <Input
+            defaultValue={value} // Đảm bảo giá trị là số hoặc chuỗi
+            prefix="đ"
+            style={{ width: 120 }}
+            onChange={(e) => {
+              const newValue = e.target.value;
+
+              // Cập nhật giá trị mới
+              setPlusPricePrints((prev) => ({
+                ...prev,
+                [record.key]: newValue,
+              }));
+              setMainTableData((prev) =>
+                prev.map((item) =>
+                  item.key === record.key
+                    ? {
+                        ...item,
+                        plusPricePrint: newValue,
+                        totalPrice:
+                          parseFloat(item.quantity) * item.pricePrint +
+                          parseFloat(newValue) +
+                          parseFloat(item.plus_price), // Cập nhật thành tiền
+                      }
+                    : item
+                )
+              );
+            }}
+          />
+        );
+      },
+    },
+    {
       title: "Thành tiền",
       dataIndex: "totalPrice",
       key: "totalPrice",
       render: (total, record) => {
         return (
-          <Text strong>
-            {new Intl.NumberFormat("vi-VN").format(record.totalPrice)} đ
-          </Text>
+          <Input
+            //value={new Intl.NumberFormat("vi-VN").format(record.totalPrice)}
+
+            value={thanhTien === 0 ? record.totalPrice : thanhTien}
+            onChange={(e) => setThanhTien(e.target.value)}
+            suffix="đ"
+          />
         );
       },
     },
@@ -473,6 +565,7 @@ function EditOrderPrinting() {
           : null, // Lấy ngày hoặc null nếu không có
         quantity_print: quantityPrints[productCode],
         price_print: pricePrints[productCode],
+        plusPricePrint: plusPricePrints[productCode],
       };
     });
 
@@ -484,6 +577,7 @@ function EditOrderPrinting() {
     dataProducts,
     pricePrints,
     quantityPrints,
+    plusPricePrints,
   ]); // Theo dõi các thay đổi
   const handleUpdateOrder = async () => {
     const token = localStorage.getItem("authToken");
@@ -546,7 +640,7 @@ function EditOrderPrinting() {
     setValueDelivery(e.target.value); // Cập nhật giá trị nhập vào
     const updatedRemainingAmount = totalAmount + deliveryCost - deposit; // Tính lại giá trị còn lại
     setNew1(updatedRemainingAmount); // Cập nhật giá trị còn lại
-    const total1 = parseFloat(new3) + deliveryCost - valueDelivery;
+    const total1 = parseFloat(new3) + deliveryCost - valueDeliveryOld;
     setNew2(total1); // Cập nhật giá trị còn lại
   };
 
@@ -584,12 +678,12 @@ function EditOrderPrinting() {
               fontWeight: "bold",
             }}
           >
-            <Statistic title="Ngày nhận hàng:" value={formatDate(dateOrder)} />
+            <Statistic title="Ngày đặt hàng:" value={formatDate(dateOrder)} />
           </Col>
           <Col>
             <Statistic
               title="Trạng thái"
-              valueRender={() => <Tag color="green">Đang báo giá</Tag>}
+              valueRender={() => <Tag color="green">{nameStatus}</Tag>}
             />
           </Col>
         </Space>
@@ -793,10 +887,6 @@ function EditOrderPrinting() {
         </Col>
       </Row>
       <div id="print-area" style={{ display: "none" }}>
-        {console.log(customerName)}
-        {console.log(phoneCustomer)}
-        {console.log(addressCustomer)}
-        {console.log(mainTableData)}
         {isReadyToRender && (
           <Bill
             name={customerName}
@@ -804,6 +894,20 @@ function EditOrderPrinting() {
             data={mainTableData}
             phone={phoneCustomer}
             address={addressCustomer}
+            vat={vat}
+            discount={promotion}
+            deposit={deposit}
+            totalAmount={totalAmount}
+            remainingAmount={new1}
+            order_date={dateOrder}
+            order_date1={formatDate(estimatedDate)}
+            order_ship={valueDelivery}
+            tax_code={taxCode}
+            email={email}
+            company_name={company_name}
+            name1={name1}
+            address1={address1}
+            phone1={phone1}
           />
         )}
       </div>

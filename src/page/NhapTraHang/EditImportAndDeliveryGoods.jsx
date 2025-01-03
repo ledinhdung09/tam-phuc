@@ -35,12 +35,21 @@ import {
 } from "../../apis/handleDataAPI";
 import { useEffect, useState } from "react";
 import moment from "moment";
+import Bill from "../Order/Bill";
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
 
 function EditImportAndDeliveryGoods() {
   const [form] = Form.useForm();
+  const [isReadyToRender, setIsReadyToRender] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsReadyToRender(true);
+    }, 3000); // Chờ 3 giây
+
+    return () => clearTimeout(timer); // Dọn dẹp bộ hẹn giờ khi component bị unmount
+  }, []);
   const calculateTotalPrice = (dataSource) => {
     return dataSource.reduce((total, record) => total + record.totalPrice, 0);
   };
@@ -63,7 +72,9 @@ function EditImportAndDeliveryGoods() {
   const [customerId, setCustomerId] = useState(""); // Trạng thái lưu ngày dự kiến
   const [customerName, setCustomerName] = useState(""); // Trạng thái lưu ngày dự kiến
   const [notes, setNotes] = useState(""); // Trạng thái lưu ngày dự kiến
-  const [dataProductDetail, setDataProductDetail] = useState([]);
+  const [phoneCustomer, setPhoneCustomer] = useState("");
+  const [addressCustomer, setAddressCustomer] = useState("");
+  const [nameStatus, setNameStatus] = useState("");
 
   useEffect(() => {
     console.log(remainingAmount);
@@ -82,6 +93,11 @@ function EditImportAndDeliveryGoods() {
         setTotalMoney(response.data.order.total);
         setOrder_id(response.data.order.order_id);
         setDateOrder(response.data.order.order_date);
+        switch (response.data.order.order_status) {
+          case "7":
+            setNameStatus("Đang giao");
+            break;
+        }
         setVAT(response.data.order.vat);
         setDeposit(response.data.order.deposit);
         setPromotion(response.data.order.promotion);
@@ -93,6 +109,9 @@ function EditImportAndDeliveryGoods() {
         console.log(estimatedDateString);
         setValueDelivery(response.data.order.price_ship);
         setEstimatedDate(moment(estimatedDateString));
+        setName1(response.data.order.recipient_name);
+        setAddress1(response.data.order.delivery_address);
+        setPhone1(response.data.order.recipient_phone);
         console.log(notes);
       } catch (error) {
         console.error("Error fetching order data:", error);
@@ -109,6 +128,7 @@ function EditImportAndDeliveryGoods() {
         const response = await getDataCustomerIdAPI(token, customerId);
         console.log(response);
         console.log(response.data.data.customer_name);
+        handleSelectCustomer(response.data.data);
         setCustomerName(response.data.data.customer_name); // Giả sử API trả về customer_name
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -117,7 +137,41 @@ function EditImportAndDeliveryGoods() {
     };
     fetchData();
   }, [customerId]); // Thêm customerId vào danh sách phụ thuộc
+  const handlePrint = () => {
+    const printContent = document.getElementById("print-area").innerHTML;
+    const printWindow = window.open("", "", "height=600,width=800");
+    printWindow.document.write(
+      "<html><head><title>Phiếu In</title></head><body>"
+    );
+    printWindow.document.write(printContent);
+    printWindow.document.write("</body></html>");
+    printWindow.document.close();
+    printWindow.print();
+  };
 
+  const [taxCode, setTaxCode] = useState();
+  const [email, setEmail] = useState();
+  const [company_name, setCompany_name] = useState();
+  const [name1, setName1] = useState("");
+  const [address1, setAddress1] = useState("");
+  const [phone1, setPhone1] = useState("");
+  const handleSelectCustomer = (customer) => {
+    console.log(customer);
+    setPhoneCustomer(customer.phone);
+    setCustomerName(customer.customer_name);
+    setAddressCustomer(
+      customer.address +
+        " " +
+        customer.ward +
+        " " +
+        customer.district +
+        " " +
+        customer.city
+    );
+    setTaxCode(customer.tax_code);
+    setEmail(customer.company_email);
+    setCompany_name(customer.company_name);
+  };
   useEffect(() => {
     if (dataProducts.length > 0) {
       console.log(dataProducts);
@@ -186,7 +240,13 @@ function EditImportAndDeliveryGoods() {
           </Text>
 
           <div
-            style={{ fontSize: 12, color: "#666", marginTop: 4 }}
+            style={{
+              fontSize: 12,
+              color: "#666",
+              marginTop: 4,
+              maxHeight: "50px", // Giới hạn chiều cao
+              overflowY: "auto", // Hiển thị thanh scroll dọc
+            }}
             dangerouslySetInnerHTML={{
               __html: details.notes.replace(/\n/g, "<br>"),
             }}
@@ -233,30 +293,35 @@ function EditImportAndDeliveryGoods() {
       dataIndex: "unitPrice",
       key: "unitPrice",
       render: (price) => (
-        <Input defaultValue={price} disabled prefix="đ" style={{ width: 80 }} />
+        <Input
+          defaultValue={price}
+          disabled
+          prefix="đ"
+          style={{ width: 120 }}
+        />
       ),
     },
-    {
-      title: "Nhà in",
-      dataIndex: "printer",
-      key: "printer",
-      render: (_, record) =>
-        printingHouses.length > 0 ? (
-          <Select
-            disabled
-            value={record.printer || "Chọn nhà in"} // Sử dụng giá trị từ record
-            onChange={(value) => handlePrinterChange(record.key, value)}
-          >
-            {printingHouses.map((printer) => (
-              <Select.Option key={printer.id} value={printer.id}>
-                {printer.company_name}
-              </Select.Option>
-            ))}
-          </Select>
-        ) : (
-          "Loading..."
-        ),
-    },
+    // {
+    //   title: "Nhà in",
+    //   dataIndex: "printer",
+    //   key: "printer",
+    //   render: (_, record) =>
+    //     printingHouses.length > 0 ? (
+    //       <Select
+    //         disabled
+    //         value={record.printer || "Chọn nhà in"} // Sử dụng giá trị từ record
+    //         onChange={(value) => handlePrinterChange(record.key, value)}
+    //       >
+    //         {printingHouses.map((printer) => (
+    //           <Select.Option key={printer.id} value={printer.id}>
+    //             {printer.company_name}
+    //           </Select.Option>
+    //         ))}
+    //       </Select>
+    //     ) : (
+    //       "Loading..."
+    //     ),
+    // },
     {
       title: "Thời gian",
       dataIndex: "date",
@@ -276,7 +341,6 @@ function EditImportAndDeliveryGoods() {
   ];
   const [printingHouses, setPrintingHouses] = useState([]);
   const [selectedPrinters, setSelectedPrinters] = useState({}); // Lưu nhà in được chọn
-  const [selectedDates1, setSelectedDates1] = useState({});
 
   // Gọi API để lấy danh sách nhà in
   const fetchPrintingHouses = async () => {
@@ -374,17 +438,24 @@ function EditImportAndDeliveryGoods() {
               fontWeight: "bold",
             }}
           >
-            <Statistic title="Ngày nhận hàng:" value={formatDate(dateOrder)} />
+            <Statistic title="Ngày đặt hàng:" value={formatDate(dateOrder)} />
           </Col>
           <Col>
             <Statistic
               title="Trạng thái"
-              valueRender={() => <Tag color="green">Đang đặt nhà in</Tag>}
+              valueRender={() => <Tag color="green">{nameStatus}</Tag>}
             />
           </Col>
         </Space>
         <Button
           type="primary"
+          onClick={() => {
+            if (!isReadyToRender) {
+              alert("Dữ liệu đang được chuẩn bị, vui lòng đợi...");
+            } else {
+              handlePrint();
+            }
+          }}
           icon={<PrinterOutlined />}
           style={{ float: "right" }}
         >
@@ -571,6 +642,31 @@ function EditImportAndDeliveryGoods() {
           </Row>
         </Col>
       </Row>
+      <div id="print-area" style={{ display: "none" }}>
+        {isReadyToRender && (
+          <Bill
+            name={customerName}
+            orderId={id}
+            data={mainTableData}
+            phone={phoneCustomer}
+            address={addressCustomer}
+            vat={vat}
+            discount={promotion}
+            deposit={deposit}
+            totalAmount={totalAmount}
+            remainingAmount={new1}
+            order_date={dateOrder}
+            order_date1={formatDate(estimatedDate)}
+            order_ship={valueDelivery}
+            tax_code={taxCode}
+            email={email}
+            company_name={company_name}
+            name1={name1}
+            address1={address1}
+            phone1={phone1}
+          />
+        )}
+      </div>
     </Content>
   );
 }

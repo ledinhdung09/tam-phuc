@@ -395,7 +395,7 @@ function EditProducts() {
                 <Col key={index} xs={24} sm={12} md={8} lg={6}>
                   {/* <Text style={{ color: "#52c41a" }}>Đơn hàng #{order}</Text> */}
                   <Link
-                    to={`/don-hang/chi-tiet-don-hang/${order}`}
+                    to={`/san-pham/edit-don-hang/${order}`}
                     style={{ color: "#52c41a", textDecoration: "none" }}
                   >
                     <Text style={{ color: "#52c41a" }}>Đơn hàng #{order}</Text>

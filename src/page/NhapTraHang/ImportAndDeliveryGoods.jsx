@@ -8,7 +8,6 @@ const { Content } = Layout;
 function ImportAndDeliveryGoods() {
   const [dataValue, setDataValue] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalOrders, setTotalOrders] = useState(0);
   const fetchData = async () => {
     const token = localStorage.getItem("authToken");
     try {
@@ -30,7 +29,6 @@ function ImportAndDeliveryGoods() {
         vat: "Xem hóa đơn",
       }));
       setDataValue(transformedData);
-      setTotalOrders(filteredOrders.length);
       console.log("Orders with status 2: ", filteredOrders);
     } catch (error) {
       console.log(error);
@@ -59,6 +57,13 @@ function ImportAndDeliveryGoods() {
       title: "Mã đơn",
       dataIndex: "id",
       key: "id",
+      render: (text, record) => {
+        return (
+          <Link to={`/nhap-va-giao-hang/edit-nhap-va-giao-hang/${record.id}`}>
+            #{text}
+          </Link>
+        );
+      },
     },
     {
       title: "Doanh thu",
@@ -127,7 +132,16 @@ function ImportAndDeliveryGoods() {
       key: "vat",
       dataIndex: "vat",
       render: (text, record) => (
-        <Link to={`edit-nhap-va-giao-hang/${record.id}`}>{text}</Link>
+        <Link
+          to={{
+            pathname: `/nhap-va-giao-hang/bill`,
+          }}
+          state={{
+            orderId: record.id,
+          }}
+        >
+          {text}
+        </Link>
       ),
     },
   ];

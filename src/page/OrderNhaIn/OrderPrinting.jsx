@@ -62,6 +62,13 @@ function OrderPrinting() {
       title: "Mã đơn",
       dataIndex: "id",
       key: "id",
+      render: (text, record) => {
+        return (
+          <Link to={`/dat-hang-nha-in/edit-dat-hang-nha-in/${record.id}`}>
+            #{text}
+          </Link>
+        );
+      },
     },
     {
       title: "Doanh thu",
@@ -129,14 +136,18 @@ function OrderPrinting() {
       title: "Hóa đơn VAT",
       key: "vat",
       dataIndex: "vat",
-      render: (text, record) =>
-        record.status === "Đã in xong" ? (
-          <Link to={`/nhap-va-giao-hang/edit-nhap-va-giao-hang/${record.id}`}>
-            {text}
-          </Link>
-        ) : (
-          <Link to={`edit-dat-hang-nha-in/${record.id}`}>{text}</Link>
-        ),
+      render: (text, record) => (
+        <Link
+          to={{
+            pathname: `/dat-hang-nha-in/bill`,
+          }}
+          state={{
+            orderId: record.id,
+          }}
+        >
+          {text}
+        </Link>
+      ),
     },
   ];
 

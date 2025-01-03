@@ -1,12 +1,15 @@
-import { Layout, Table, Tabs, notification, theme } from "antd";
+import { Layout, Table, Tabs, notification } from "antd";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getDataOrdersAPI } from "../apis/handleDataAPI";
-
+import { SearchOutlined } from "@ant-design/icons";
+import { Input } from "antd";
 const { Content } = Layout;
 
 function Home() {
   const [dataValue, setDataValue] = useState([]);
+  const [searchText, setSearchText] = useState(""); // Lưu trữ nội dung tìm kiếm
+  const [currentStatus, setCurrentStatus] = useState("all"); // Lưu trạng thái hiện tại từ Tabs
 
   const fetchData = async () => {
     const token = localStorage.getItem("authToken");
@@ -49,29 +52,89 @@ function Home() {
     }
   };
 
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
-
-  const [activeKey, setActiveKey] = useState("1"); // State để lưu key của tab đang hoạt động
-
-  const location = useLocation();
-  const [api, contextHolder] = notification.useNotification();
-
   useEffect(() => {
     fetchData();
-    if (location.state?.message) {
-      api.success({
-        message: "Thông báo",
-        description: location.state.message,
-        showProgress: true,
-        pauseOnHover: true,
-      });
+  }, []);
+
+  const filterData = () => {
+    // Kết hợp tìm kiếm và lọc theo trạng thái
+    let filteredData = dataValue;
+
+    // Lọc theo trạng thái (nếu không phải "all")
+    if (currentStatus !== "all") {
+      filteredData = filteredData.filter(
+        (item) => item.status === currentStatus
+      );
     }
-  }, [location.state]);
+
+    // Lọc theo chuỗi tìm kiếm (nếu có nội dung tìm kiếm)
+    if (searchText.trim() !== "") {
+      filteredData = filteredData.filter((item) =>
+        item.id.toString().includes(searchText.trim())
+      );
+    }
+
+    return filteredData;
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "Đã hoàn thành":
+        return {
+          backgroundColor: "lightgreen",
+          color: "black",
+          padding: "4px 8px",
+          borderRadius: "8px",
+        };
+      case "Đang báo giá":
+        return {
+          backgroundColor: "lightgray",
+          color: "black",
+          padding: "4px 8px",
+          borderRadius: "8px",
+        };
+      case "Đang giao":
+        return {
+          backgroundColor: "peachpuff",
+          color: "black",
+          padding: "4px 8px",
+          borderRadius: "8px",
+        };
+      case "Đang in":
+        return {
+          backgroundColor: "lightgoldenrodyellow",
+          color: "black",
+          padding: "4px 8px",
+          borderRadius: "8px",
+        };
+      case "Trả hàng":
+        return {
+          backgroundColor: "lightcoral",
+          color: "black",
+          padding: "4px 8px",
+          borderRadius: "8px",
+        };
+      default:
+        return {
+          backgroundColor: "white",
+          color: "black",
+          padding: "4px 8px",
+          borderRadius: "8px",
+        };
+    }
+  };
 
   const columns = [
-    { title: "Mã đơn", dataIndex: "id", key: "id" },
+    {
+      title: "Mã đơn",
+      dataIndex: "id",
+      key: "id",
+      render: (text, record) => {
+        return (
+          <Link to={`/tong-quan/edit-don-hang/${record.id}`}>#{text}</Link>
+        );
+      },
+    },
     {
       title: "Doanh thu",
       dataIndex: "revenue",
@@ -80,40 +143,18 @@ function Home() {
         <div style={{ whiteSpace: "normal" }}>
           {text.split("  ").map((item, index) => (
             <div key={index}>
-              {" "}
-              {new Intl.NumberFormat("vi-VN").format(item)} đ{" "}
+              {new Intl.NumberFormat("vi-VN").format(item)} đ
             </div>
           ))}
         </div>
       ),
     },
-    {
-      title: "Thời gian",
-      dataIndex: "datetime",
-      key: "datetime",
-      render: (text) => (
-        <div style={{ whiteSpace: "normal" }}>
-          {text.split("  ").map((item, index) => (
-            <div key={index}>{item}</div>
-          ))}
-        </div>
-      ),
-    },
+    { title: "Thời gian", dataIndex: "datetime", key: "datetime" },
     {
       title: "Tình trạng",
       dataIndex: "status",
       key: "status",
-      render: (status) => {
-        const colorMap = {
-          "Đang báo giá": "orange",
-          "Đang in": "blue",
-          "Đã hoàn thành": "green",
-          "Trả hàng": "red",
-        };
-        return (
-          <span style={{ color: colorMap[status] || "black" }}>{status}</span>
-        );
-      },
+      render: (status) => <span style={getStatusStyle(status)}>{status}</span>,
     },
     {
       title: "Nhân viên xử lý",
@@ -130,137 +171,76 @@ function Home() {
       dataIndex: "vat",
       key: "vat",
       render: (text, record) => {
-        if (record.status === "Đang báo giá") {
-          return (
-            <Link to={`/tong-quan/edit-dat-hang-nha-in/${record.id}`}>
-              {text}
-            </Link>
-          );
-        } else if (record.status === "Đang in") {
-          return (
-            <Link to={`/tong-quan/edit-nhap-va-giao-hang/${record.id}`}>
-              {text}
-            </Link>
-          );
-        } else if (record.status === "Đã hoàn thành") {
-          return (
-            <Link to={`/tong-quan/da-hoan-thanh/${record.id}`}>{text}</Link>
-          );
-        } else if (record.status === "Trả hàng") {
-          return (
-            <Link to={`/tong-quan/edit-tra-hang/${record.id}`}>{text}</Link>
-          );
-        } else if (record.status === "Đã xóa") {
-          return <Link to={`/tong-quan/da-xoa/${record.id}`}>{text}</Link>;
-        } else if (record.status === "Lưu nháp") {
-          return <Link to={`/tong-quan/da-luu/${record.id}`}>{text}</Link>;
-        } else if (record.status === "Giao hàng thất bại") {
-          return (
-            <Link to={`/tong-quan/giao-hang-that-bai/${record.id}`}>
-              {text}
-            </Link>
-          );
-        } else if (record.status === "Đang giao") {
-          return <Link to={`/tong-quan/dang-giao/${record.id}`}>{text}</Link>;
-        }
-        return text;
+        return (
+          <Link
+            to={{
+              pathname: `/tong-quan/bill`,
+            }}
+            state={{
+              orderId: record.id,
+            }}
+          >
+            {text}
+          </Link>
+        );
       },
     },
   ];
 
-  console.log("Check status: ", dataValue);
-
-  //hàm lọc sản phẩm theo trạng thái
-  const filterDataByStatus = (status) =>
-    status === "all"
-      ? dataValue
-      : dataValue.filter((item) => item.status === status);
-
-  const items = [
-    {
-      key: "1",
-      label: "Tất cả đơn hàng",
-      children: (
-        <Table
-          columns={columns}
-          dataSource={filterDataByStatus("all")}
-          pagination={{
-            position: ["bottomCenter"],
-            pageSize: 15,
-          }}
-        />
-      ),
-    },
-    {
-      key: "2",
-      label: "Đang báo giá",
-      children: (
-        <Table
-          columns={columns}
-          dataSource={filterDataByStatus("Đang báo giá")}
-          pagination={{
-            position: ["bottomCenter"],
-            pageSize: 15,
-          }}
-        />
-      ),
-    },
-    {
-      key: "3",
-      label: "Đang in",
-      children: (
-        <Table
-          columns={columns}
-          dataSource={filterDataByStatus("Đang in")}
-          pagination={{
-            position: ["bottomCenter"],
-            pageSize: 15,
-          }}
-        />
-      ),
-    },
-    {
-      key: "4",
-      label: "Đã hoàn thành",
-      children: (
-        <Table
-          columns={columns}
-          dataSource={filterDataByStatus("Đã hoàn thành")}
-          pagination={{
-            position: ["bottomCenter"],
-            pageSize: 15,
-          }}
-        />
-      ),
-    },
-    {
-      key: "5",
-      label: "Trả hàng",
-      children: (
-        <Table
-          columns={columns}
-          dataSource={filterDataByStatus("Trả hàng")}
-          pagination={{
-            position: ["bottomCenter"],
-            pageSize: 15,
-          }}
-        />
-      ),
-    },
+  const tabs = [
+    { key: "all", label: "Tất cả đơn hàng" },
+    { key: "Đang báo giá", label: "Đang báo giá" },
+    { key: "Đang in", label: "Đang in" },
+    { key: "Đã hoàn thành", label: "Đã hoàn thành" },
+    { key: "Trả hàng", label: "Trả hàng" },
   ];
+
+  const handleSearch = (value) => {
+    setSearchText(value); // Cập nhật chuỗi tìm kiếm
+  };
+
+  const handleTabChange = (key) => {
+    setCurrentStatus(key); // Cập nhật trạng thái hiện tại từ Tabs
+  };
+  const location = useLocation();
+  const [api, contextHolder] = notification.useNotification();
+  useEffect(() => {
+    fetchData();
+    if (location.state?.message) {
+      api.success({
+        message: "Thông báo",
+        description: location.state.message,
+        showProgress: true,
+        pauseOnHover: true,
+      });
+    }
+  }, [location.state]);
 
   return (
     <Content
       style={{
         margin: "24px 16px",
         padding: 24,
-        background: colorBgContainer,
-        borderRadius: borderRadiusLG,
-        overflow: "auto",
+        background: "#fff",
+        borderRadius: "8px",
       }}
     >
       {contextHolder}
-      <Tabs defaultActiveKey="1" items={items} onChange={setActiveKey} />
+
+      <Input
+        placeholder="Nhập mã đơn hàng để tìm kiếm..."
+        onChange={(e) => handleSearch(e.target.value)} // Gọi handleSearch khi người dùng nhập
+        style={{
+          marginBottom: 16,
+        }}
+        prefix={<SearchOutlined />}
+      />
+      <Tabs defaultActiveKey="all" items={tabs} onChange={handleTabChange} />
+      <Table
+        columns={columns}
+        dataSource={filterData()} // Lọc dữ liệu trước khi hiển thị
+        pagination={{ position: ["bottomCenter"], pageSize: 15 }}
+      />
     </Content>
   );
 }

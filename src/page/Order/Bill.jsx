@@ -1,4 +1,4 @@
-import { Table, Typography, Row, Col, Divider, Flex } from "antd";
+import { Typography, Row, Col, Divider } from "antd";
 import { useEffect } from "react";
 
 const { Title, Text } = Typography;
@@ -8,12 +8,93 @@ const Bill = (props) => {
     console.log(props);
   });
 
+  const convertToWords = (amount) => {
+    if (!amount || isNaN(amount)) return "Không hợp lệ";
+
+    const units = ["", "ngàn", "triệu", "tỷ"];
+    const digits = [
+      "không",
+      "một",
+      "hai",
+      "ba",
+      "bốn",
+      "năm",
+      "sáu",
+      "bảy",
+      "tám",
+      "chín",
+    ];
+
+    let result = "";
+    let unitIndex = 0;
+
+    while (amount > 0) {
+      let group = amount % 1000; // Lấy 3 chữ số cuối
+      if (group > 0) {
+        let groupText = "";
+        let hundreds = Math.floor(group / 100); // Lấy hàng trăm
+        let tens = Math.floor((group % 100) / 10); // Lấy hàng chục
+        let ones = group % 10; // Lấy hàng đơn vị
+
+        // Xử lý hàng trăm
+        if (hundreds > 0) {
+          groupText += `${digits[hundreds]} trăm `;
+        }
+
+        // Xử lý hàng chục và đơn vị
+        if (tens > 1) {
+          groupText += `${digits[tens]} mươi `;
+          if (ones > 0) {
+            groupText += digits[ones];
+          }
+        } else if (tens === 1) {
+          groupText += "mười ";
+          if (ones > 0) {
+            groupText += digits[ones];
+          }
+        } else if (ones > 0) {
+          groupText += digits[ones];
+        }
+
+        groupText = groupText.trim();
+        result = `${groupText} ${units[unitIndex]} ${result}`.trim();
+      }
+
+      amount = Math.floor(amount / 1000); // Loại bỏ 3 chữ số cuối
+      unitIndex++;
+    }
+
+    return result + " đồng";
+  };
+
+  const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined) return "0 ₫";
+    return `${amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} ₫`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Không xác định"; // Xử lý trường hợp null/undefined
+
+    try {
+      const date = new Date(dateString); // Chuyển chuỗi thành Date
+      if (isNaN(date)) throw new Error("Invalid date"); // Kiểm tra nếu date không hợp lệ
+
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear();
+
+      return `${day}/${month}/${year}`;
+    } catch {
+      return "Định dạng ngày không hợp lệ"; // Xử lý lỗi
+    }
+  };
+
   return (
     <div style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
       {/* Thông báo */}
       <div
         style={{
-          backgroundColor: "#0099cc",
+          backgroundColor: "#009966",
           color: "#fff",
           padding: 10,
           marginBottom: 20,
@@ -34,20 +115,24 @@ const Bill = (props) => {
           justifyContent: "space-between",
         }}
       >
-        <Col span={12}>
-          <Title level={4}>SONG TẠO</Title>
+        <Col
+          span={12}
+          style={{
+            paddingLeft: "5rem",
+          }}
+        >
+          <Title level={4}>CÔNG TY TNHH TM DV IN ẤN TÂM PHÚC</Title>
           <Text>
-            Địa chỉ: 84A Đường 25, P. Tân Quy, Q. 7, TP. HCM <br />
-            Điện thoại: (028) 7100 0707 - 7306 0707 <br />
-            Nhân viên: Phạm Tuấn Kiệt
+            Địa chỉ: 60 Lê Quyên, Phường 4, Quận 8, TP.HCM <br />
+            MST: 0315389943
           </Text>
         </Col>
-        <Col span={12} style={{ textAlign: "right" }}>
+        <Col span={12} style={{ textAlign: "left", paddingRight: "10rem" }}>
           <Title level={4}>PHIẾU ĐẶT HÀNG / HỢP ĐỒNG</Title>
           <Text>
-            Mã ĐH: WF-061924-144 <br />
-            Ngày nhận: 19/06/2024 <br />
-            Ngày có hàng tại CN: 21/06/2024
+            Mã ĐH: #{props.orderId} <br />
+            Ngày đặt hàng: {formatDate(props.order_date?.split(" ")[0])} <br />
+            Ngày nhận hàng: {formatDate(props.order_date1)}
           </Text>
         </Col>
       </Row>
@@ -59,27 +144,83 @@ const Bill = (props) => {
           style={{
             display: "flex",
             justifyContent: "space-between",
+            paddingBottom: "2rem",
+            paddingTop: "1rem",
           }}
         >
-          {props.name || props.address || props.phone ? (
-            <Col span={12}>
-              {props.name && <Title level={5}>Người nhận: {props.name}</Title>}
-              <Text>
-                {props.address && (
-                  <>
-                    Địa chỉ: {props.address} <br />
-                  </>
-                )}
-                {props.phone && <>Điện thoại: {props.phone}</>}
-              </Text>
-            </Col>
-          ) : null}
-          <Col span={12}>
-            <Title level={5}>Công ty:</Title>
-            <Text>
-              CÔNG TY TNHH TM DV IN ẤN TÂM PHÚC <br />
-              Địa chỉ: 60 Lê Quyên, Phường 4, Quận 8, TP. HCM <br />
-              MST: 0315389943
+          <Col
+            span={12}
+            style={{
+              paddingLeft: "5rem",
+            }}
+          >
+            <Title
+              style={{
+                marginBottom: "15px",
+              }}
+              level={4}
+            >
+              THÔNG TIN NGƯỜI ĐẶT HÀNG
+            </Title>
+            <Text
+              style={{
+                fontWeight: 600,
+                marginBottom: "15px",
+                display: "block",
+              }}
+            >
+              Người đặt: {props.name}
+            </Text>
+            <Text
+              style={{
+                display: "block",
+                marginBottom: "15px",
+              }}
+            >
+              Điện thoại: {props.phone}
+            </Text>
+            <Text style={{ display: "block", marginBottom: "15px" }}>
+              Email: {props.email}
+            </Text>
+            <Text style={{ display: "block", marginBottom: "15px" }}>
+              Công ty: {props.company_name}
+            </Text>
+            <Text style={{ display: "block", marginBottom: "15px" }}>
+              Mã số thuế: {props.tax_code}
+            </Text>
+            <Text style={{ display: "block", marginBottom: "15px" }}>
+              Địa chỉ: {props.address}
+            </Text>
+          </Col>
+
+          <Col
+            span={12}
+            style={{
+              paddingRight: "20rem",
+            }}
+          >
+            <Title
+              style={{
+                marginBottom: "15px",
+              }}
+              level={4}
+            >
+              THÔNG TIN NGƯỜI NHẬN HÀNG
+            </Title>
+            <Text
+              style={{
+                fontWeight: 600,
+                marginBottom: "15px",
+                display: "block",
+              }}
+            >
+              Người nhận: {props.name1}
+            </Text>
+            <Text style={{ display: "block", marginBottom: "15px" }}>
+              Điện thoại: {props.phone1}
+            </Text>
+            <Text style={{ display: "block", marginBottom: "15px" }}>
+              Địa chỉ: {props.address1}
             </Text>
           </Col>
         </Row>
@@ -170,18 +311,96 @@ const Bill = (props) => {
                     textAlign: "center",
                   }}
                 >
-                  {item.unitPrice || "0"}
+                  {formatCurrency(item.unitPrice) ||
+                    formatCurrency(item.pricePrint) ||
+                    "0"}
                 </td>
                 <td
                   style={{
                     textAlign: "center",
                   }}
                 >
-                  {item.totalPrice || "0"}
+                  {formatCurrency(item.totalPrice) || "0"}
                 </td>
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr>
+              <td
+                colSpan="6"
+                rowSpan="6"
+                style={{
+                  textAlign: "left",
+                  padding: "10px",
+                  verticalAlign: "top", // Đảm bảo nội dung căn chỉnh đúng
+                }}
+              >
+                <strong>Cộng thành tiền (viết bằng chữ):</strong>
+                <br /> {convertToWords(props.remainingAmount)}
+              </td>
+              <td style={{ textAlign: "right", padding: "10px" }}>
+                Khuyến mãi:
+              </td>
+              <td style={{ textAlign: "right", padding: "10px" }}>
+                {formatCurrency(props.discount)}
+              </td>
+            </tr>
+            <tr>
+              <td style={{ textAlign: "right", padding: "10px" }}>
+                Chi phí giao hàng:
+              </td>
+              <td style={{ textAlign: "right", padding: "10px" }}>
+                {formatCurrency(
+                  props.order_ship === undefined ? "0" : props.order_ship
+                )}
+              </td>
+            </tr>
+            <tr>
+              <td style={{ textAlign: "right", padding: "10px" }}>VAT:</td>
+              <td style={{ textAlign: "right", padding: "10px" }}>
+                {props.vat}
+              </td>
+            </tr>
+            <tr>
+              <td
+                style={{
+                  textAlign: "right",
+                  padding: "10px",
+                  fontWeight: "bold",
+                }}
+              >
+                Tổng cộng:
+              </td>
+              <td
+                style={{
+                  textAlign: "right",
+                  padding: "10px",
+                  fontWeight: "bold",
+                }}
+              >
+                {formatCurrency(props.totalAmount)}
+              </td>
+            </tr>
+            <tr>
+              <td style={{ textAlign: "right", padding: "10px" }}>Đặt cọc:</td>
+              <td style={{ textAlign: "right", padding: "10px" }}>
+                {formatCurrency(props.deposit)}
+              </td>
+            </tr>
+            <tr>
+              <td style={{ textAlign: "right", padding: "10px" }}>Còn lại:</td>
+              <td
+                style={{
+                  textAlign: "right",
+                  padding: "10px",
+                  fontWeight: "bold",
+                }}
+              >
+                {formatCurrency(props.remainingAmount)}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       )}
     </div>

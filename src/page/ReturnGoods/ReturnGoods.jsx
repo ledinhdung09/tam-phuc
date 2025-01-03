@@ -17,9 +17,7 @@ function ReturnGoods() {
       const orders = res.data.data;
 
       // Lọc các order có order_status = 2
-      const filteredOrders = orders.filter(
-        (order) => order.order_status == 4 || order.order_status == 5
-      );
+      const filteredOrders = orders.filter((order) => order.order_status == 4);
 
       const transformedData = filteredOrders.map((item) => ({
         key: item.order_id,
@@ -61,6 +59,9 @@ function ReturnGoods() {
       title: "Mã đơn",
       dataIndex: "id",
       key: "id",
+      render: (text, record) => {
+        return <Link to={`edit-tra-hang/${record.id}`}>#{text}</Link>;
+      },
     },
     {
       title: "Doanh thu",

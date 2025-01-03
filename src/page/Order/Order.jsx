@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Button, Layout, Pagination, Table, Tabs, theme } from "antd";
+import { Button, Input, Layout, Table, Tabs, theme } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { getDataOrdersAPI } from "../../apis/handleDataAPI";
+import { SearchOutlined } from "@ant-design/icons";
 
 const { Content } = Layout;
 
@@ -11,13 +12,20 @@ function Order() {
   } = theme.useToken();
 
   const navigate = useNavigate();
-  const [activeKey, setActiveKey] = useState("1"); // Track active tab
-  const [data, setData] = useState([]);
+  const [activeKey, setActiveKey] = useState("1"); // Theo dõi tab đang hoạt động
+  const [data, setData] = useState([]); // Dữ liệu đơn hàng
+  const [searchText, setSearchText] = useState(""); // Dữ liệu tìm kiếm
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const [totalOrders, setTotalOrders] = useState(0); // Tổng số đơn hàng
+
   const columns = [
     {
       title: "Mã đơn",
       dataIndex: "id",
       key: "id",
+      render: (text, record) => {
+        return <Link to={`edit-don-hang/${record.id}`}>#{text}</Link>;
+      },
     },
     {
       title: "Doanh thu",
@@ -84,93 +92,93 @@ function Order() {
       title: "Hóa đơn VAT",
       key: "vat",
       dataIndex: "vat",
-      render: (text, record) => (
-        <Link to={`edit-don-hang/${record.id}`}>{text}</Link>
-      ),
+      render: (text, record) => {
+        return (
+          <Link
+            to={{
+              pathname: `/don-hang/bill`,
+            }}
+            state={{
+              orderId: record.id,
+            }}
+          >
+            {text}
+          </Link>
+        );
+      },
     },
   ];
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalOrders, setTotalOrders] = useState(0);
+
+  // Fetch dữ liệu đơn hàng
   const fetchData = async (page = 1, limit = 50) => {
     const token = localStorage.getItem("authToken");
     try {
       const response = await getDataOrdersAPI(token, page, limit);
-      console.log(response);
-
       const orders = response.data.data;
+
       if (!orders || orders.length === 0) {
-        setData([]); // Nếu không có đơn hàng, đặt dữ liệu thành mảng rỗng
-        setTotalOrders(0); // Đặt tổng số đơn hàng là 0
+        setData([]);
+        setTotalOrders(0);
         return;
       }
-      console.log(orders);
 
       const filteredOrders = orders.filter(
-        (order) => order.order_status === "1"
+        (order) =>
+          order.order_status === "1" ||
+          order.order_status === "2" ||
+          order.order_status === "7"
       );
 
-      const transformedData = filteredOrders.map((item) => ({
-        key: item.order_id,
-        id: item.order_id,
-        revenue: item.total,
-        datetime: item.order_date,
-        actprocessing_staffion: item.processing_employee,
-        file_processing_design: item.design_confirm_employee,
-        status: "Đang báo giá",
-        vat: "Xem hóa đơn",
-      }));
+      const transformedData = filteredOrders.map((item) => {
+        let status;
+        switch (item.order_status) {
+          case "1":
+            status = "Đang báo giá";
+            break;
+          case "2":
+            status = "Đang in";
+            break;
+          case "7":
+            status = "Đang giao";
+            break;
+          default:
+            status = "Trạng thái không xác định";
+        }
+
+        return {
+          key: item.order_id,
+          id: item.order_id,
+          revenue: item.total,
+          datetime: item.order_date,
+          actprocessing_staffion: item.processing_employee,
+          file_processing_design: item.design_confirm_employee,
+          status: status,
+          vat: "Xem hóa đơn",
+        };
+      });
 
       setData(transformedData);
-      setTotalOrders(filteredOrders.length); // Sử dụng số lượng đơn hàng đã lọc
+      setTotalOrders(filteredOrders.length);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
+
   useEffect(() => {
     fetchData();
   }, []);
 
-  const items = [
-    {
-      key: "1",
-      label: (
-        <Button
-          style={{
-            backgroundColor: activeKey === "1" ? "#348F63" : undefined,
-            color: activeKey === "1" ? "#fff" : undefined,
-          }}
-        >
-          Tất cả đơn hàng
-        </Button>
-      ),
-      children: (
-        <>
-          {data.length > 0 ? ( // Kiểm tra nếu có dữ liệu
-            <Table
-              columns={columns}
-              dataSource={data}
-              pagination={{
-                current: currentPage,
-                pageSize: 15,
-                total: data.length,
-                position: ["bottomCenter"],
-                onChange: (page) => {
-                  setCurrentPage(page);
-                },
-              }}
-            />
-          ) : (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              Không có đơn hàng nào để hiển thị.
-            </div>
-          )}
-        </>
-      ),
-    },
-  ];
+  // Lọc dữ liệu theo tìm kiếm
+  const filteredData = data.filter((item) =>
+    item.id.toString().toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const handleSearch = (value) => {
+    setSearchText(value.trim());
+  };
 
   const onChange = () => {
-    navigate("them-don-hang"); // Navigate to the "Thêm đơn hàng" route
+    navigate("them-don-hang");
   };
 
   return (
@@ -184,6 +192,19 @@ function Order() {
         position: "relative",
       }}
     >
+      <Input
+        placeholder="Nhập mã đơn hàng để tìm kiếm..."
+        onChange={(e) => handleSearch(e.target.value)} // Gọi handleSearch khi người dùng nhập
+        style={{
+          marginBottom: 16,
+          position: "absolute",
+          width: "400px",
+          zIndex: 999,
+          right: "40%",
+        }}
+        prefix={<SearchOutlined />}
+      />
+
       <Button
         style={{
           backgroundColor: "green",
@@ -195,12 +216,47 @@ function Order() {
         type="primary"
         onClick={onChange}
       >
-        Thên đơn hàng
+        Thêm đơn hàng
       </Button>
       <Tabs
-        activeKey={activeKey} // Bind activeKey to state
+        activeKey={activeKey}
         style={{ paddingTop: 0 }}
-        items={items}
+        items={[
+          {
+            key: "1",
+            label: (
+              <Button
+                style={{
+                  backgroundColor: activeKey === "1" ? "#348F63" : undefined,
+                  color: activeKey === "1" ? "#fff" : undefined,
+                }}
+              >
+                Tất cả đơn hàng
+              </Button>
+            ),
+            children: (
+              <>
+                {filteredData.length > 0 ? (
+                  <Table
+                    columns={columns}
+                    dataSource={filteredData}
+                    pagination={{
+                      current: currentPage,
+                      pageSize: 15,
+                      total: filteredData.length,
+                      position: ["bottomCenter"],
+                      onChange: (page) => setCurrentPage(page),
+                    }}
+                  />
+                ) : (
+                  <div style={{ textAlign: "center", padding: "20px" }}>
+                    Không tìm thấy kết quả phù hợp.
+                  </div>
+                )}
+              </>
+            ),
+          },
+        ]}
       />
     </Content>
   );

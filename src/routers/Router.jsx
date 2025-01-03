@@ -28,6 +28,8 @@ import OrderSave from "../page/OrderSave/OrderSave";
 import OrderDelete from "../page/OrderDelete/OrderDelete";
 import OrderFail from "../page/OrderFail/OrderFail";
 import OrderDetail from "../page/Order/OrderDetail";
+import EditOrderPrinting1 from "../page/OrderNhaIn/EditOrderPrinting1";
+import BillOrder from "../page/Order/BillOrder";
 
 function RouterDashboard() {
   // Kiểm tra trạng thái đăng nhập (ví dụ: token trong localStorage)
@@ -67,7 +69,15 @@ function RouterDashboard() {
         path="/tong-quan/edit-dat-hang-nha-in/:id"
         element={
           <ProtectedRoute isAuthenticated={isAuthenticated}>
-            <EditOrderPrinting />
+            <EditOrderPrinting1 />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tong-quan/edit-don-hang/:id"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <EditOrder />
           </ProtectedRoute>
         }
       />
@@ -155,7 +165,31 @@ function RouterDashboard() {
         path="/don-hang/bill"
         element={
           <ProtectedRoute isAuthenticated={isAuthenticated}>
-            <Bill />
+            <BillOrder />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dat-hang-nha-in/bill"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <BillOrder />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nhap-va-giao-hang/bill"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <BillOrder />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tong-quan/bill"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <BillOrder />
           </ProtectedRoute>
         }
       />
@@ -300,6 +334,14 @@ function RouterDashboard() {
         element={
           <ProtectedRoute isAuthenticated={isAuthenticated}>
             <EditProducts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/san-pham/edit-don-hang/:id"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <EditOrder />
           </ProtectedRoute>
         }
       />
