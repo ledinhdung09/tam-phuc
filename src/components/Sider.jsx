@@ -8,14 +8,14 @@ import {
 } from "@ant-design/icons";
 import { FaUsers } from "react-icons/fa";
 import { Layout, Menu } from "antd";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-
+import { check_tokenAPI } from "../apis/handleDataAPI";
 const { Sider } = Layout;
 
 function SiderDashboard() {
   const location = useLocation();
-
+  const navigate = useNavigate();
   // Map URL pathnames to menu item keys (keys correspond to main paths)
   const keyMap = [
     { path: "/tong-quan", key: "1" },
@@ -37,7 +37,40 @@ function SiderDashboard() {
   const [cate_id, setCate_id] = useState(localStorage.getItem("cate_id"));
   useEffect(() => {
     setCate_id(localStorage.getItem("cate_id"));
+    checkToken();
   }, []);
+  const checkToken = async () => {
+    const token = localStorage.getItem("authToken");
+    const username = localStorage.getItem("username");
+    if (!token) {
+      alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      return false;
+    }
+
+    try {
+      const data = await check_tokenAPI(username, token);
+
+      if (!data.data.success) {
+        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        localStorage.removeItem("authToken");
+
+        navigate("/dang-nhap");
+      }
+      return true;
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra token:", error);
+      alert("Đã xảy ra lỗi khi kiểm tra token.");
+      return false;
+    }
+  };
+
+  // Hàm xử lý click
+  const handleClick = async (callback) => {
+    const isValidToken = await checkToken();
+    if (isValidToken && typeof callback === "function") {
+      callback(); // Thực hiện hành động sau khi token hợp lệ
+    }
+  };
 
   return (
     <Sider style={{ background: "#F5F5F5" }} trigger={null} collapsible>
@@ -62,12 +95,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id === "2") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id === "2") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "1" || cate_id === "3" ? (
                   <Link to="/don-hang">Đơn hàng</Link>
@@ -87,12 +121,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id === "1") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id === "1") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "3" || cate_id === "2" ? (
                   <Link to="/dat-hang-nha-in">Đặt hàng nhà in</Link>
@@ -112,11 +147,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id === "2") {
-                    alert("Bạn không có quyền truy cập vào");
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id === "2") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "3" || cate_id === "1" ? (
                   <Link to="/nhap-va-giao-hang">Nhập & giao hàng</Link>
@@ -136,12 +173,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id === "1" || cate_id === "2") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id === "2" && cate_id === "1") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "3" ? (
                   <Link to="/tra-hang">Trả hàng</Link>
@@ -161,12 +199,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id !== "1" && cate_id !== "2" && cate_id !== "3") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id !== "2" && cate_id !== "1" && cate_id !== "3") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "1" || cate_id === "2" || cate_id === "3" ? (
                   <Link to="/bao-cao">Báo cáo</Link>
@@ -186,12 +225,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id !== "1" && cate_id !== "2" && cate_id !== "3") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id !== "1" && cate_id !== "2" && cate_id !== "3") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "1" || cate_id === "2" || cate_id === "3" ? (
                   <Link to="/san-pham">Sản phẩm</Link>
@@ -211,12 +251,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id === "2") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id === "2") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "3" || cate_id === "1" ? (
                   <Link to="/khach-hang">Khách hàng</Link>
@@ -236,12 +277,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id === "1" || cate_id === "2") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id === "2" && cate_id !== "1") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "3" ? <Link to="/nha-in">Nhà in</Link> : "Nhà in"}
               </span>
@@ -257,12 +299,13 @@ function SiderDashboard() {
                   width: "100%",
                   height: "100%",
                 }}
-                onClick={() => {
-                  if (cate_id === "1" || cate_id === "2") {
-                    alert("Bạn không có quyền truy cập vào");
-                    console.log(cate_id);
-                  }
-                }}
+                onClick={() =>
+                  handleClick(() => {
+                    if (cate_id === "2" && cate_id !== "1") {
+                      alert("Bạn không có quyền truy cập vào");
+                    }
+                  })
+                }
               >
                 {cate_id === "3" ? (
                   <Link to="/cau-hinh">Cấu hình</Link>

@@ -48,6 +48,7 @@ function AddProducts() {
       session_token: token,
       category_id: data.category_name,
       product_name: data.product_name,
+      classifyLevel2: data.product_cate_lv2,
       rules: data.rules,
       notes: data.notes !== undefined ? data.notes : "",
       price: data.price !== undefined ? data.price : 0,
@@ -166,6 +167,9 @@ function AddProducts() {
                 </Form.Item>
               </Col>
             </Row>
+            <Form.Item name="product_cate_lv2" label="Phân loại cấp 2">
+              <Input placeholder="Nhập phân loại cấp 2" />
+            </Form.Item>
           </Col>
           <Col
             style={{

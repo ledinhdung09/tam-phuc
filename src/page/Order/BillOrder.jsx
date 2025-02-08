@@ -13,6 +13,7 @@ import {
   Font,
   StyleSheet,
   PDFViewer,
+  Image,
 } from "@react-pdf/renderer";
 
 const BillOrder = () => {
@@ -206,21 +207,27 @@ const BillOrder = () => {
     }
   };
 
+  function capitalizeFirstLetter(sentence) {
+    if (!sentence) return "";
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+  }
+
   Font.register({
-    family: "Roboto",
+    family: "Noto Sans",
     fonts: [
       {
-        src: "http://fonts.gstatic.com/s/roboto/v16/zN7GBFwfMP4uA6AR0HCoLQ.ttf",
-      }, // Regular
+        src: "/font/NotoSans-Regular.ttf", // Regular
+      },
       {
-        src: "http://fonts.gstatic.com/s/roboto/v16/zN7GBFwfMP4uA6AR0HCoLQ.ttf",
-        fontWeight: 700,
-      }, // Bold
+        src: "https://fonts.gstatic.com/s/notosans/v27/o-0NIpQlx3QUlC5A4PNb4ixA1LVt-47mUoyk.ttf", // Bold
+        fontWeight: "bold",
+      },
     ],
   });
 
   const styles = StyleSheet.create({
     page: {
+      fontFamily: "Noto Sans", // Cập nhật font family
       fontSize: 10,
       padding: 20,
       lineHeight: 1.5,
@@ -255,15 +262,18 @@ const BillOrder = () => {
     },
     row: {
       display: "flex",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingRight: 50,
     },
   });
 
   const InvoicePDF = () => (
-    <Document>
-      <Page style={styles.page} orientation="landscape">
-        <View>
+    <Document title={`Hóa đơn #${props.orderId}`}>
+      <Page orientation="landscape">
+        <View style={styles.page}>
           {isReady ? (
-            (console.log(dataCustomer),
+            (console.log(mainTableData),
             (
               <View>
                 {/* Thông báo */}
@@ -274,174 +284,361 @@ const BillOrder = () => {
                     marginBottom: 20,
                   }}
                 >
-                  <Text style={{ color: "#ffffff", fontFamily: "Roboto" }}>
-                    - Quý khách vui lòng kiểm tra thông tin và thanh toán trước
-                    50% số tiền của đơn hàng. <br />- Đơn hàng của quý khách sẽ
-                    được tiến hành sau khi nhận đủ tiền. <br />- Ngày có hàng sẽ
-                    được bắt đầu tính từ lúc nhận được thông báo có tiền.
-                  </Text>
+                  <View>
+                    <Text>
+                      - Quý khách vui lòng kiểm tra thông tin và thanh toán
+                      trước 50% số tiền của đơn hàng.
+                    </Text>
+                    <Text>
+                      - Đơn hàng của quý khách sẽ được tiến hành sau khi nhận đủ
+                      tiền.
+                    </Text>
+                    <Text>
+                      - Ngày có hàng sẽ được bắt đầu tính từ lúc nhận được thông
+                      báo có tiền.
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.row}>
                   <View>
                     <Text>CÔNG TY TNHH TM DV IN ẤN TÂM PHÚC</Text>
-                    <Text>
-                      Địa chỉ: 60 Lê Quyên, Phường 4, Quận 8, TP.HCM <br />
-                      MST: 0315389943
-                    </Text>
-                  </View>{" "}
-                  <View>
+                    <View>
+                      <Text>
+                        Địa chỉ: 60 Lê Quyên, Phường 4, Quận 8, TP.HCM
+                      </Text>
+                      <Text>MST: 0315389943</Text>
+                    </View>
+                  </View>
+                  <View style={{ marginBottom: 20 }}>
                     <Text level={4}>PHIẾU ĐẶT HÀNG / HỢP ĐỒNG</Text>
-                    <Text>
-                      Mã ĐH: #{dataOrder?.order_id || "Không xác định"} <br />
-                      Ngày đặt hàng:
-                      {formatDate(dataOrder?.order_date?.split(" ")[0])} <br />
-                      Ngày nhận hàng:
-                      {formatDate(dataOrder?.estimated_delivery_date)}
-                    </Text>
+                    <View>
+                      <Text>
+                        Mã ĐH: #{dataOrder?.order_id || "Không xác định"}
+                      </Text>
+                      <Text>
+                        Ngày đặt hàng:
+                        {formatDate(dataOrder?.order_date?.split(" ")[0])}
+                      </Text>
+                      <Text>
+                        Ngày nhận hàng:
+                        {formatDate(dataOrder?.estimated_delivery_date)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
                 {/* Thông tin khách hàng */}
-
-                <Text level={4}>THÔNG TIN NGƯỜI ĐẶT HÀNG</Text>
-                <Text level={5}>
-                  {dataCustomer?.customer_name || "Không xác định"}
-                </Text>
-                <Text>
-                  Điện thoại: {dataCustomer?.phone || "Không xác định"} <br />
-                  Email: {dataCustomer?.company_email || "Không xác định"}
-                  <br />
-                  Công ty: {dataCustomer?.company_name || "Không xác định"}
-                  <br />
-                  Mã số thuế: {dataCustomer?.tax_code || "Không xác định"}
-                  <br />
-                  Địa chỉ:
-                  {`${dataCustomer?.address || ""} ${
-                    dataCustomer?.ward || ""
-                  } ${dataCustomer?.district || ""} ${
-                    dataCustomer?.city || ""
-                  }`.trim() || "Không xác định"}
-                </Text>
-                <Text level={4}>THÔNG TIN NGƯỜI NHẬN HÀNG</Text>
-                {dataOrder?.recipient_name && (
-                  <Text level={5}>Người nhận: {dataOrder?.recipient_name}</Text>
-                )}
-                <Text>
-                  {dataOrder?.recipient_phone && (
-                    <>
-                      Điện thoại: {dataOrder?.recipient_phone} <br />
-                    </>
-                  )}
-                  {dataOrder?.delivery_address && (
-                    <>Địa chỉ: {dataOrder?.delivery_address}</>
-                  )}
-                </Text>
+                <View style={styles.row}>
+                  <View>
+                    <Text level={4}>THÔNG TIN NGƯỜI ĐẶT HÀNG</Text>
+                    <Text level={5}>
+                      {dataCustomer?.customer_name || "Không xác định"}
+                    </Text>
+                    <View>
+                      <Text>
+                        Điện thoại: {dataCustomer?.phone || "Không xác định"}{" "}
+                      </Text>
+                      <Text>Email: {dataCustomer?.company_email || ""}</Text>
+                      <Text>
+                        Công ty:{" "}
+                        {dataCustomer?.company_name || "Không xác định"}
+                      </Text>
+                      <Text>Mã số thuế: {dataCustomer?.tax_code || ""}</Text>
+                      <Text>
+                        Địa chỉ:
+                        {` ${dataCustomer?.address || ""} ${
+                          dataCustomer?.ward || ""
+                        } ${dataCustomer?.district || ""} ${
+                          dataCustomer?.city || ""
+                        }`.trim() || "Không xác định"}
+                      </Text>
+                    </View>
+                  </View>
+                  <View>
+                    <Text level={4}>THÔNG TIN NGƯỜI NHẬN HÀNG</Text>
+                    {dataOrder?.recipient_name && (
+                      <Text level={5}>
+                        Người nhận: {dataOrder?.recipient_name}
+                      </Text>
+                    )}
+                    <View>
+                      <Text>
+                        {dataOrder?.recipient_phone && (
+                          <>
+                            Điện thoại: {dataOrder?.recipient_phone} <br />
+                          </>
+                        )}
+                      </Text>
+                      <Text>
+                        {dataOrder?.delivery_address && (
+                          <>Địa chỉ: {dataOrder?.delivery_address}</>
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
                 {/* Bảng sản phẩm */}
                 {mainTableData && mainTableData.length > 0 && (
-                  <table
-                    border="1"
-                    style={{ width: "100%", borderCollapse: "collapse" }}
+                  <View
+                    style={{
+                      border: "1px solid black",
+                      borderCollapse: "collapse",
+                      marginTop: 10,
+                    }}
                   >
-                    <thead>
-                      <tr>
-                        <th width={50}>
-                          <Text> STT</Text>
-                        </th>
-                        <th width={100}>
-                          <Text>Sản phẩm</Text>
-                        </th>
-                        <th width={200}>
-                          <Text>Mô tả</Text>
-                        </th>
-                        <th width={100}>
-                          <Text>Hình</Text>
-                        </th>
-                        <th width={50}>
-                          <Text>ĐVT</Text>
-                        </th>
-                        <th width={50}>
-                          <Text>Số lượng</Text>
-                        </th>
-                        <th width={100}>
-                          <Text>Đơn giá</Text>
-                        </th>
-                        <th width={100}>
-                          <Text>Thành tiền</Text>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                    <View
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        borderBottom: "1px solid black",
+                      }}
+                    >
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 40,
+                          borderRight: "1px solid black",
+                          padding: 5,
+                        }}
+                      >
+                        <Text>STT</Text>
+                      </View>
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 100,
+                          borderRight: "1px solid black",
+                          padding: 5,
+                        }}
+                      >
+                        <Text>Sản phẩm</Text>
+                      </View>
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 200,
+                          borderRight: "1px solid black",
+                          padding: 5,
+                        }}
+                      >
+                        <Text>Mô tả</Text>
+                      </View>
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 100,
+                          borderRight: "1px solid black",
+                          padding: 5,
+                        }}
+                      >
+                        <Text>Hình</Text>
+                      </View>
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 50,
+                          borderRight: "1px solid black",
+                          padding: 5,
+                        }}
+                      >
+                        <Text>ĐVT</Text>
+                      </View>
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 50,
+                          borderRight: "1px solid black",
+                          padding: 5,
+                        }}
+                      >
+                        <Text>Số lượng</Text>
+                      </View>
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 100,
+                          borderRight: "1px solid black",
+                          padding: 5,
+                        }}
+                      >
+                        <Text>Đơn giá</Text>
+                      </View>
+                      <View
+                        style={{
+                          textAlign: "center",
+                          width: 100,
+                          padding: 5,
+                        }}
+                      >
+                        <Text>Thành tiền</Text>
+                      </View>
+                    </View>
+
+                    <View>
                       {mainTableData.map((item, index) => (
-                        <tr key={index}>
-                          <td style={{ textAlign: "center" }}>
+                        <View
+                          style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            borderBottom: "1px solid black",
+                          }}
+                          key={index}
+                        >
+                          <View
+                            style={{
+                              textAlign: "center",
+                              width: 40,
+                              borderRight: "1px solid black",
+                              padding: 5,
+                            }}
+                          >
                             <Text>{index + 1}</Text>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
+                          </View>
+                          <View
+                            style={{
+                              textAlign: "center",
+                              width: 100,
+                              borderRight: "1px solid black",
+                              padding: 5,
+                            }}
+                          >
                             <Text>
                               {item.productDetails?.name || "Không xác định"}
                             </Text>
-                          </td>
-                          <td style={{ textAlign: "left" }}>
+                          </View>
+                          <View
+                            style={{
+                              textAlign: "left",
+                              width: 200,
+                              borderRight: "1px solid black",
+                              padding: 5,
+                            }}
+                          >
                             <Text>
                               {item.productDetails?.notes || "Không có mô tả"}
                             </Text>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <img
-                              style={{
-                                width: "50px",
-                                height: "50px",
-                                margin: "1rem",
-                              }}
-                              src={item.image || ""}
-                              alt="Product"
-                            />
-                          </td>
-                          <td style={{ textAlign: "center" }}>
+                          </View>
+                          <View
+                            style={{
+                              textAlign: "center",
+                              width: 100,
+                              borderRight: "1px solid black",
+                              padding: 5,
+                            }}
+                          >
+                            {item.image ? (
+                              <>
+                                <Image
+                                  src={{
+                                    uri: `https://cors.bridged.cc/https://lumiaicreations.com/tam-phuc/Backend-API-Print-Shop/api${item.image}`,
+                                  }}
+                                  style={{
+                                    width: 90,
+                                    height: 90,
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <Text>Chưa có hình</Text>
+                            )}
+                          </View>
+                          <View
+                            style={{
+                              textAlign: "center",
+                              width: 50,
+                              borderRight: "1px solid black",
+                              padding: 5,
+                            }}
+                          >
                             <Text>{item.unit || ""}</Text>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <Text> {item.quantity || 0}</Text>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <Text> {formatCurrency(item.unitPrice)}</Text>
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <Text> {formatCurrency(item.totalPrice)}</Text>
-                          </td>
-                        </tr>
+                          </View>
+                          <View
+                            style={{
+                              textAlign: "center",
+                              width: 50,
+                              borderRight: "1px solid black",
+                              padding: 5,
+                            }}
+                          >
+                            <Text>{item.quantity || 0}</Text>
+                          </View>
+                          <View
+                            style={{
+                              textAlign: "center",
+                              width: 100,
+                              borderRight: "1px solid black",
+                              padding: 5,
+                            }}
+                          >
+                            <Text>{formatCurrency(item.unitPrice)}</Text>
+                          </View>
+                          <View
+                            style={{
+                              textAlign: "center",
+                              width: 100,
+                              padding: 5,
+                            }}
+                          >
+                            <Text>{formatCurrency(item.totalPrice)}</Text>
+                          </View>
+                        </View>
                       ))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td
-                          colSpan="6"
-                          style={{ textAlign: "left", padding: "10px" }}
-                        >
-                          <Text>Cộng thành tiền (viết bằng chữ):</Text>
-                          <br />
-                          <Text> {convertToWords(dataOrder?.total)}</Text>
-                        </td>
-                        <td style={{ textAlign: "right", padding: "10px" }}>
-                          <Text>Tổng cộng:</Text>
-                        </td>
-                        <td style={{ textAlign: "right", padding: "10px" }}>
-                          <Text>{formatCurrency(dataOrder?.totalAmount)}</Text>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                    </View>
+                    <View
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        marginTop: 10,
+                      }}
+                    >
+                      <View style={{ flex: 1, paddingLeft: 10 }}>
+                        <Text>Cộng thành tiền (viết bằng chữ):</Text>
+                        <Text>
+                          {capitalizeFirstLetter(
+                            convertToWords(dataOrder?.total)
+                          )}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          border: "1px solid black",
+                          padding: 10,
+                          flex: 1,
+                        }}
+                      >
+                        <Text>Khuyến mãi:</Text>
+                        <Text>Chi phí giao hàng:</Text>
+                        <Text>VAT:</Text>
+                        <Text>Tổng cộng:</Text>
+                        <Text>Đặt cọc:</Text>
+                        <Text>Còn lại:</Text>
+                      </View>
+                      <View
+                        style={{
+                          border: "1px solid black",
+                          padding: 10,
+                          flex: 1,
+                        }}
+                      >
+                        <Text>{formatCurrency(dataOrder?.promotion)}</Text>
+                        <Text>{formatCurrency(dataOrder?.price_ship)}</Text>
+                        <Text>{dataOrder?.vat} %</Text>
+                        <Text>
+                          {formatCurrency(
+                            parseInt(dataOrder?.total) +
+                              parseInt(dataOrder?.deposit)
+                          )}
+                        </Text>
+                        <Text>{formatCurrency(dataOrder?.deposit)}</Text>
+                        <Text>{formatCurrency(dataOrder?.total)}</Text>
+                      </View>
+                    </View>
+                  </View>
                 )}
               </View>
             ))
           ) : (
-            <Text
-              style={{
-                fontFamily: "Roboto",
-              }}
-            >
-              Đang tải dữ liệu...
-            </Text>
+            <Text>Nhà in Tâm Phúc đang tải dữ liệu...</Text>
           )}
         </View>
       </Page>
@@ -451,7 +648,9 @@ const BillOrder = () => {
   return (
     <>
       <div style={{ width: "100%", height: "600px" }}>
-        <PDFViewer style={{ width: "100%", height: "100%" }}>
+        <PDFViewer
+          style={{ width: "100%", height: "100%", fontFamily: "Roboto" }}
+        >
           <InvoicePDF />
         </PDFViewer>
       </div>

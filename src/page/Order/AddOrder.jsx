@@ -17,6 +17,7 @@ import {
   DatePicker,
   Card,
   Tooltip,
+  Checkbox,
 } from "antd";
 import moment from "moment";
 const { Title, Text } = Typography;
@@ -27,11 +28,14 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  getAllCategoryAPI,
   getAllStaffAPI,
   getDataProductAPI,
+  getDataProductByCateAPI,
+  getDataProductByClasifyAPI,
   getDataStaffIdAPI,
   getQuantityProductAPI,
   postDataCustomerAPI,
@@ -260,7 +264,7 @@ function AddOrder() {
 
   const addProductToTable = (product) => {
     console.log(product);
-
+    setStatusProduct(false);
     // Tìm số lượng và giá tối thiểu
     const minQuantity =
       product.pricing && product.pricing.length > 0
@@ -343,20 +347,11 @@ function AddOrder() {
     address: "",
     notes: "Không có ghi chú.",
   });
-  const handlePrint = () => {
-    const printContent = document.getElementById("print-area").innerHTML;
-    const printWindow = window.open("", "", "height=600,width=800");
-    printWindow.document.write(
-      "<html><head><title>Phiếu In</title></head><body>"
-    );
-    printWindow.document.write(printContent);
-    printWindow.document.write("</body></html>");
-    printWindow.document.close();
-    printWindow.print();
-  };
+
   const handleChange = (key, value) => {
     setOrder((prev) => ({ ...prev, [key]: value }));
   };
+
   const handleCancel = () => {
     setIsModalVisible(false);
   };
@@ -516,6 +511,8 @@ function AddOrder() {
       vat: vat,
       deposit: deposit,
       promotion: discount,
+      isVat: isVat === true ? 1 : 0,
+      statusVat: vatStatus === "yes" ? 1 : 0,
     }; // Thêm idCustomer vào formData
     console.log(formData); // Kiểm tra kết quả
 
@@ -548,6 +545,8 @@ function AddOrder() {
       vat: vat,
       deposit: deposit,
       promotion: discount,
+      isVat: isVat === true ? 1 : 0,
+      statusVat: vatStatus === "yes" ? 1 : 0,
     }; // Thêm idCustomer vào formData
     console.log(formData); // Kiểm tra kết quả
 
@@ -565,6 +564,7 @@ function AddOrder() {
 
   useEffect(() => {
     getDataProduct();
+    fetchDataCate();
   }, []);
   const [products, setProducts] = useState([]);
   const getDataProduct = async () => {
@@ -592,9 +592,6 @@ function AddOrder() {
   const [searchName, setSearchName] = useState("");
 
   // Lọc sản phẩm dựa trên tên
-  const filteredProducts = products.filter((product) =>
-    product.product_name.toLowerCase().includes(searchName.toLowerCase())
-  );
 
   const [discount, setDiscount] = useState(0); // Khuyến mãi
   const [vat, setVAT] = useState(0); // VAT (%)
@@ -623,6 +620,110 @@ function AddOrder() {
     setSearchTerm(value); // Cập nhật từ khóa
     handleSearchCustomer(value); // Lọc danh sách
   };
+
+  const [isVat, setIsVat] = useState(false);
+  const [vatStatus, setVatStatus] = useState("");
+  const handleVAT = () => {
+    setIsVat((prev) => !prev);
+    setVatStatus("");
+  };
+
+  const handleSelectChange = (value) => {
+    setVatStatus(value); // Cập nhật giá trị được chọn
+    console.log("Selected VAT status:", value); // In ra console
+  };
+
+  const [dataCate, setDataCate] = useState([]);
+  const [selectedCate, setSelectedCate] = useState(null);
+  const [selectedClassify, setSelectedClassify] = useState(null);
+  const [idCate, setIdCate] = useState("");
+  const [dataClassifyLv2, setDataClassifyLv2] = useState([]);
+  const [dataProductByClassify, setDataProductByClassify] = useState([]);
+  const [statusProduct, setStatusProduct] = useState(false);
+
+  const fetchDataCate = async () => {
+    const res = await getAllCategoryAPI(token);
+    console.log(res);
+    const formattedData = res.data.data.map((item) => ({
+      value: item.id.toString(), // Chuyển id thành chuỗi nếu cần
+      label: item.category_name,
+    }));
+    setDataCate(formattedData);
+  };
+
+  const fetchDataProductByCate = async (id) => {
+    const res = await getDataProductByCateAPI(token, id);
+    console.log(res);
+
+    // Lọc bỏ giá trị null, undefined trước khi tạo Set
+    const uniqueClassifyLevel2 = Array.from(
+      new Set(
+        res.data.products
+          .map((item) => item.classifyLevel2)
+          .filter(
+            (classify) =>
+              classify !== null && classify !== undefined && classify !== ""
+          )
+      )
+    ).map((classify) => ({
+      value: classify,
+      label: classify,
+    }));
+
+    setDataClassifyLv2(uniqueClassifyLevel2);
+  };
+
+  const fetchDataProductByClassify = async (id, idCate) => {
+    const res = await getDataProductByClasifyAPI(token, id, idCate);
+    console.log(res);
+    const transformedData = res.data.products.map((item) => ({
+      key: item.id,
+      product_name: item.product_name,
+      category_name: item.category_name,
+      multiple_pricing: item.multiple_pricing,
+      price: item.price,
+      plusPrice: item.plusPrice,
+      pricing: item.pricing,
+      rules: item.rules,
+      notes: item.notes,
+    }));
+    setDataProductByClassify(transformedData);
+  };
+
+  const filteredProducts = dataProductByClassify.filter((product) =>
+    product.product_name.toLowerCase().includes(searchName.toLowerCase())
+  );
+
+  const onChangeCate = (value) => {
+    fetchDataProductByCate(value);
+    setStatusProduct(false);
+    setIdCate(value);
+    setSelectedCate(value);
+    setSelectedClassify(null);
+    setDataProductByClassify([]);
+  };
+
+  const onChangeClassify = (value) => {
+    setSelectedClassify(value);
+    setStatusProduct(false);
+    fetchDataProductByClassify(value, idCate);
+  };
+
+  const modalRef = useRef(null);
+
+  const closeModal = () => setStatusProduct(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        closeModal();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <Content
       style={{
@@ -772,7 +873,7 @@ function AddOrder() {
                 flex: 2,
                 gap: 16,
                 marginRight: 20,
-                maxHeight: 250,
+                maxHeight: 350,
                 background: colorBgContainer,
               }}
             >
@@ -785,7 +886,12 @@ function AddOrder() {
 
               <Space direction="vertical" style={{ width: "100%" }}>
                 <Form.Item name="recipient_name">
-                  <Input placeholder="Tên người nhận" />
+                  <Input
+                    style={{
+                      width: 220,
+                    }}
+                    placeholder="Tên người nhận"
+                  />
                 </Form.Item>
                 <Form.Item name="recipient_phone">
                   <Input placeholder="Số điện thoại" />
@@ -794,6 +900,42 @@ function AddOrder() {
                   <Input.TextArea rows={3} placeholder="Địa chỉ nhận hàng" />
                 </Form.Item>
               </Space>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <Checkbox
+                  style={{
+                    marginBottom: 10,
+                  }}
+                  onChange={handleVAT}
+                >
+                  Hóa đơn VAT
+                </Checkbox>
+                {isVat && (
+                  <Select
+                    style={{
+                      width: 220,
+                    }}
+                    defaultValue={"no"}
+                    allowClear
+                    options={[
+                      {
+                        value: "no",
+                        label: "Chưa xuất VAT",
+                      },
+                      {
+                        value: "yes",
+                        label: "Đã xuất VAT",
+                      },
+                    ]}
+                    placeholder="Trạng thái"
+                    onChange={handleSelectChange}
+                  />
+                )}
+              </div>
             </Col>
           </Row>
         </Row>
@@ -828,20 +970,48 @@ function AddOrder() {
               <div
                 style={{
                   position: "relative",
+                  display: "flex",
                 }}
               >
+                <Select
+                  showSearch
+                  placeholder="Chọn hoặc nhập danh mục sản phẩm"
+                  optionFilterProp="label"
+                  style={{
+                    width: "100%",
+                  }}
+                  value={selectedCate}
+                  onChange={onChangeCate}
+                  options={dataCate}
+                />
+
+                <Select
+                  showSearch
+                  placeholder="Chọn hoặc nhập phân loại cấp 2"
+                  optionFilterProp="label"
+                  style={{
+                    width: "100%",
+                    margin: " 0 10px 8px 10px",
+                  }}
+                  value={selectedClassify}
+                  onChange={onChangeClassify}
+                  options={dataClassifyLv2}
+                />
+
                 <Input
                   style={{
                     width: "100%",
                     marginBottom: 8,
                   }}
                   value={searchName}
+                  onClick={() => setStatusProduct(true)}
                   onChange={(e) => setSearchName(e.target.value)}
                   addonBefore={<SearchOutlined />}
                   placeholder="Tìm kiếm sản phẩm"
                 />
-                {searchName && filteredProducts.length > 0 && (
+                {statusProduct && filteredProducts.length > 0 && (
                   <div
+                    ref={modalRef}
                     style={{
                       position: "absolute",
                       top: "100%",
@@ -1083,57 +1253,6 @@ function AddOrder() {
             </Row>
           </Col>
         </Row>
-
-        <Card
-          title="Thông tin phiếu đặt hàng"
-          style={{ display: "none" }}
-          bordered={false}
-        >
-          <div style={{ marginBottom: "20px" }}>
-            <Text strong>Mã phiếu đặt hàng:</Text> <span>{order.id}</span>
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <Text strong>Ngày nhận hàng:</Text>
-            <DatePicker
-              defaultValue={moment(order.date, "YYYY/MM/DD")}
-              format="YYYY/MM/DD"
-              onChange={(date, dateString) => handleChange("date", dateString)}
-            />
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <Input
-              placeholder="Tên khách hàng"
-              value={order.customerName}
-              onChange={(e) => handleChange("customerName", e.target.value)}
-            />
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <Input
-              placeholder="Số điện thoại"
-              value={order.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
-            />
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <Input
-              placeholder="Địa chỉ nhận hàng"
-              value={order.address}
-              onChange={(e) => handleChange("address", e.target.value)}
-            />
-          </div>
-        </Card>
-        <div id="print-area" style={{ display: "none" }}>
-          <Bill
-            name={nameCustomer}
-            orderId={order.id}
-            columns={mainTableColumns} // Truyền tên cột
-            data={mainTableData}
-          />
-        </div>
       </Form>
     </Content>
   );

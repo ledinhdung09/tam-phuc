@@ -42,16 +42,14 @@ function Order() {
       ),
     },
     {
-      title: "Thời gian",
+      title: "Ngày đặt",
       dataIndex: "datetime",
       key: "datetime",
-      render: (text) => (
-        <div style={{ whiteSpace: "normal" }}>
-          {text.split("  ").map((item, index) => (
-            <div key={index}>{item}</div>
-          ))}
-        </div>
-      ),
+    },
+    {
+      title: "Ngày nhận",
+      dataIndex: "datetime1",
+      key: "datetime1",
     },
     {
       title: "Tình trạng",
@@ -149,7 +147,8 @@ function Order() {
           key: item.order_id,
           id: item.order_id,
           revenue: item.total,
-          datetime: item.order_date,
+          datetime: formatDate(item.order_date),
+          datetime1: formatDate(item.estimated_delivery_date),
           actprocessing_staffion: item.processing_employee,
           file_processing_design: item.design_confirm_employee,
           status: status,
@@ -163,7 +162,18 @@ function Order() {
       console.error("Error fetching data:", error);
     }
   };
-
+  const formatDate = (dateString) => {
+    if (!dateString) return "Không xác định";
+    try {
+      const date = new Date(dateString);
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return "Định dạng ngày không hợp lệ";
+    }
+  };
   useEffect(() => {
     fetchData();
   }, []);

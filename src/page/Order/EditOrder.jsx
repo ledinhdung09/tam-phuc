@@ -20,6 +20,7 @@ import {
   Tag,
   Popconfirm,
   Tooltip,
+  Checkbox,
 } from "antd";
 import moment from "moment";
 const { Title, Text } = Typography;
@@ -30,13 +31,16 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  getAllCategoryAPI,
   getAllStaffAPI,
   getDataCustomerIdAPI,
   getDataOrdersByIdAPI,
   getDataProductAPI,
+  getDataProductByCateAPI,
+  getDataProductByClasifyAPI,
   getDataProductByIdAPI,
   getQuantityProductAPI,
   postDataCustomerAPI,
@@ -294,6 +298,7 @@ function EditOrder() {
 
   const addProductToTable = (product) => {
     // Tìm số lượng và giá tối thiểu
+    setStatusProduct(false);
     const minQuantity =
       product.pricing && product.pricing.length > 0
         ? Math.min(...product.pricing.map((p) => parseInt(p.quantity, 10)))
@@ -481,6 +486,8 @@ function EditOrder() {
       deposit: deposit,
       promotion: discount,
       order_id: id,
+      isVat: isVat === true ? 1 : 0,
+      statusVat: vatStatus === "yes" ? 1 : 0,
     }; // Thêm idCustomer vào formData
 
     try {
@@ -511,8 +518,10 @@ function EditOrder() {
       deposit: deposit,
       promotion: discount,
       order_id: id,
+      isVat: isVat === true ? 1 : 0,
+      statusVat: vatStatus === "yes" ? 1 : 0,
     }; // Thêm idCustomer vào formData
-
+    console.log("edit");
     try {
       const response = await updateDataOrdersAPI(formData);
       if (response.data.success == true) {
@@ -526,6 +535,7 @@ function EditOrder() {
 
   useEffect(() => {
     getDataProduct();
+    fetchDataCate();
   }, []);
   const [products, setProducts] = useState([]);
   const getDataProduct = async () => {
@@ -552,10 +562,6 @@ function EditOrder() {
 
   const [searchName, setSearchName] = useState("");
 
-  // Lọc sản phẩm dựa trên tên
-  const filteredProducts = products.filter((product) =>
-    product.product_name.toLowerCase().includes(searchName.toLowerCase())
-  );
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     if (isNaN(date)) return "Ngày không hợp lệ";
@@ -624,6 +630,8 @@ function EditOrder() {
         setName1(data.recipient_name);
         setAddress1(data.delivery_address);
         setPhone1(data.recipient_phone);
+        setIsVat(data.isVat == "1" ? true : false);
+        setVatStatus(data.statusVat == "1" ? "yes" : "no");
 
         // Kiểm tra và xử lý dữ liệu sản phẩm
         const productDetails = JSON.parse(data.product_details || "[]");
@@ -818,6 +826,108 @@ function EditOrder() {
         break;
     }
   }, [orderStatus]);
+
+  const [isVat, setIsVat] = useState(false);
+  const [vatStatus, setVatStatus] = useState("");
+  const handleVAT = () => {
+    setIsVat((prev) => !prev);
+  };
+
+  const handleSelectChange = (value) => {
+    setVatStatus(value); // Cập nhật giá trị được chọn
+  };
+
+  const [dataCate, setDataCate] = useState([]);
+  const [selectedCate, setSelectedCate] = useState(null);
+  const [selectedClassify, setSelectedClassify] = useState(null);
+  const [idCate, setIdCate] = useState("");
+  const [dataClassifyLv2, setDataClassifyLv2] = useState([]);
+  const [dataProductByClassify, setDataProductByClassify] = useState([]);
+  const [statusProduct, setStatusProduct] = useState(false);
+
+  const fetchDataCate = async () => {
+    const res = await getAllCategoryAPI(token);
+    console.log(res);
+    const formattedData = res.data.data.map((item) => ({
+      value: item.id.toString(), // Chuyển id thành chuỗi nếu cần
+      label: item.category_name,
+    }));
+    setDataCate(formattedData);
+  };
+
+  const fetchDataProductByCate = async (id) => {
+    const res = await getDataProductByCateAPI(token, id);
+    console.log(res);
+
+    // Lọc bỏ giá trị null, undefined trước khi tạo Set
+    const uniqueClassifyLevel2 = Array.from(
+      new Set(
+        res.data.products
+          .map((item) => item.classifyLevel2)
+          .filter(
+            (classify) =>
+              classify !== null && classify !== undefined && classify !== ""
+          )
+      )
+    ).map((classify) => ({
+      value: classify,
+      label: classify,
+    }));
+
+    setDataClassifyLv2(uniqueClassifyLevel2);
+  };
+
+  const fetchDataProductByClassify = async (id, idCate) => {
+    const res = await getDataProductByClasifyAPI(token, id, idCate);
+    console.log(res);
+    const transformedData = res.data.products.map((item) => ({
+      key: item.id,
+      product_name: item.product_name,
+      category_name: item.category_name,
+      multiple_pricing: item.multiple_pricing,
+      price: item.price,
+      plusPrice: item.plusPrice,
+      pricing: item.pricing,
+      rules: item.rules,
+      notes: item.notes,
+    }));
+    setDataProductByClassify(transformedData);
+  };
+
+  const filteredProducts = dataProductByClassify.filter((product) =>
+    product.product_name.toLowerCase().includes(searchName.toLowerCase())
+  );
+
+  const onChangeCate = (value) => {
+    fetchDataProductByCate(value);
+    setStatusProduct(false);
+    setIdCate(value);
+    setSelectedCate(value);
+    setSelectedClassify(null);
+    setDataProductByClassify([]);
+  };
+
+  const onChangeClassify = (value) => {
+    setSelectedClassify(value);
+    setStatusProduct(false);
+    fetchDataProductByClassify(value, idCate);
+  };
+
+  const modalRef = useRef(null);
+
+  const closeModal = () => setStatusProduct(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        closeModal();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <Content
       style={{
@@ -840,6 +950,7 @@ function EditOrder() {
             >
               <Statistic
                 title="Mã phiếu đặt hàng:"
+                prefix={"#"}
                 value={order_id}
                 valueStyle={{ color: "#000", fontWeight: "bold" }}
               />
@@ -1035,7 +1146,7 @@ function EditOrder() {
                 borderRadius: "10px",
                 flex: 2,
                 marginRight: 20,
-                maxHeight: 250,
+                maxHeight: 350,
                 background: colorBgContainer,
               }}
             >
@@ -1048,7 +1159,12 @@ function EditOrder() {
 
               <Space direction="vertical" style={{ width: "100%" }}>
                 <Form.Item name="recipient_name">
-                  <Input placeholder="Tên người nhận" />
+                  <Input
+                    style={{
+                      width: 220,
+                    }}
+                    placeholder="Tên người nhận"
+                  />
                 </Form.Item>
                 <Form.Item name="recipient_phone">
                   <Input placeholder="Số điện thoại" />
@@ -1057,6 +1173,43 @@ function EditOrder() {
                   <Input.TextArea rows={3} placeholder="Địa chỉ nhận hàng" />
                 </Form.Item>
               </Space>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <Checkbox
+                  checked={isVat}
+                  style={{
+                    marginBottom: 10,
+                  }}
+                  onChange={handleVAT}
+                >
+                  Hóa đơn VAT
+                </Checkbox>
+                {isVat && (
+                  <Select
+                    value={vatStatus}
+                    style={{
+                      width: 220,
+                    }}
+                    allowClear
+                    options={[
+                      {
+                        value: "no",
+                        label: "Chưa xuất VAT",
+                      },
+                      {
+                        value: "yes",
+                        label: "Đã xuất VAT",
+                      },
+                    ]}
+                    placeholder="Trạng thái"
+                    onChange={handleSelectChange}
+                  />
+                )}
+              </div>
             </Col>
           </Row>
         </Row>
@@ -1091,20 +1244,48 @@ function EditOrder() {
               <div
                 style={{
                   position: "relative",
+                  display: "flex",
                 }}
               >
+                <Select
+                  showSearch
+                  placeholder="Chọn hoặc nhập danh mục sản phẩm"
+                  optionFilterProp="label"
+                  style={{
+                    width: "100%",
+                  }}
+                  value={selectedCate}
+                  onChange={onChangeCate}
+                  options={dataCate}
+                />
+
+                <Select
+                  showSearch
+                  placeholder="Chọn hoặc nhập phân loại cấp 2"
+                  optionFilterProp="label"
+                  style={{
+                    width: "100%",
+                    margin: " 0 10px 8px 10px",
+                  }}
+                  value={selectedClassify}
+                  onChange={onChangeClassify}
+                  options={dataClassifyLv2}
+                />
+
                 <Input
                   style={{
                     width: "100%",
                     marginBottom: 8,
                   }}
                   value={searchName}
+                  onClick={() => setStatusProduct(true)}
                   onChange={(e) => setSearchName(e.target.value)}
                   addonBefore={<SearchOutlined />}
                   placeholder="Tìm kiếm sản phẩm"
                 />
-                {searchName && filteredProducts.length > 0 && (
+                {statusProduct && filteredProducts.length > 0 && (
                   <div
+                    ref={modalRef}
                     style={{
                       position: "absolute",
                       top: "100%",

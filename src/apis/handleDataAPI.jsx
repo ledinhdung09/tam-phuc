@@ -2,6 +2,7 @@ import axiosClient from "./axiosClient";
 
 const END_POINT = {
   LOGIN: "login.php",
+  CHECK_TOKEN: "check_token.php",
 
   CUSTOMER_ALL: "customer/get_customers.php",
   CUSTOMER_ADD: "customer/create_customer.php",
@@ -26,6 +27,8 @@ const END_POINT = {
   PRODUCT: "product/qlsp.php",
   PRODUCT_ALL: "product/show_products.php",
   PRODUCT_BY_ID: "product/show_product_by_id.php",
+  PRODUCT_BY_CATE: "product/show_product_by_cate.php",
+  PRODUCT_BY_CLASSIFY: "product/show_product_by_classify.php",
   PRODUCT_ORDER: "product/check_product_order.php",
 
   ORDER_ALL: "order/get_orders.php",
@@ -70,8 +73,6 @@ export const updateOrdersStatusAPI = (
   order_id,
   order_status
 ) => {
-  console.log(session_token);
-  console.log(order_id);
   return axiosClient.post(END_POINT.ORDER_UPDATE_STATUS, {
     session_token: session_token,
     order_id: order_id,
@@ -80,7 +81,6 @@ export const updateOrdersStatusAPI = (
 };
 
 export const updateOrdersAPI = (data) => {
-  console.log(data);
   return axiosClient.post(END_POINT.ORDER_UPDATE_DETAIL, {
     session_token: data.session_token,
     product_details: data.product_details,
@@ -106,7 +106,6 @@ export const getQuantityProductAPI = (session_token, quantity, product_id) => {
 };
 
 export const updateDataOrdersAPI = (data) => {
-  console.log(data);
   return axiosClient.post(END_POINT.ORDER_UPDATE, {
     session_token: data.session_token,
     customer_id: data.customer_id,
@@ -124,11 +123,12 @@ export const updateDataOrdersAPI = (data) => {
     deposit: data.deposit,
     promotion: data.promotion,
     order_id: data.order_id,
+    isVat: data.isVat,
+    statusVat: data.statusVat,
   });
 };
 
 export const postDataOrdersAPI = (data) => {
-  console.log(data);
   return axiosClient.post(END_POINT.ORDER_ADD, {
     session_token: data.session_token,
     customer_id: data.customer_id,
@@ -156,6 +156,8 @@ export const postDataOrdersAPI = (data) => {
     vat: data.vat,
     deposit: data.deposit,
     promotion: data.promotion,
+    isVat: data.isVat,
+    statusVat: data.statusVat,
   });
 };
 
@@ -167,9 +169,6 @@ export const getDataOrdersByIdAPI = (session_token, id) => {
 };
 
 export const getDataOrdersAPI = (session_token, page, limit) => {
-  console.log(session_token);
-  console.log(page);
-  console.log(limit);
   return axiosClient.post(END_POINT.ORDER_ALL, {
     session_token: session_token,
     page: page,
@@ -194,10 +193,10 @@ export const getProductOrderAPI = (session_token, product_name) => {
 };
 
 export const postAddProductAPI = (data) => {
-  console.log(data);
   return axiosClient.post(END_POINT.PRODUCT, {
     category_id: data.category_id,
     product_name: data.product_name,
+    classifyLevel2: data.classifyLevel2,
     rules: data.rules,
     notes: data.notes,
     nhieuquycach: data.nhieuquycach,
@@ -213,6 +212,7 @@ export const postEditProductAPI = (data) => {
     id: data.id,
     category_id: data.category_id,
     product_name: data.product_name,
+    classifyLevel2: data.classifyLevel2,
     rules: data.rules,
     notes: data.notes,
     price: data.price,
@@ -226,6 +226,22 @@ export const postEditProductAPI = (data) => {
 export const getDataProductByIdAPI = (session_token, product_id) => {
   return axiosClient.get(
     `${END_POINT.PRODUCT_BY_ID}?session_token=${session_token}&product_id=${product_id}`
+  );
+};
+
+export const getDataProductByCateAPI = (session_token, category_id) => {
+  return axiosClient.get(
+    `${END_POINT.PRODUCT_BY_CATE}?session_token=${session_token}&category_id=${category_id}`
+  );
+};
+
+export const getDataProductByClasifyAPI = (
+  session_token,
+  classifyLevel2,
+  category_id
+) => {
+  return axiosClient.get(
+    `${END_POINT.PRODUCT_BY_CLASSIFY}?session_token=${session_token}&classifyLevel2=${classifyLevel2}&category_id=${category_id}`
   );
 };
 
@@ -497,5 +513,12 @@ export const postLoginAPI = (username, password) => {
   return axiosClient.post(END_POINT.LOGIN, {
     username,
     password,
+  });
+};
+
+export const check_tokenAPI = (username, session_token) => {
+  return axiosClient.post(END_POINT.CHECK_TOKEN, {
+    username,
+    session_token,
   });
 };
