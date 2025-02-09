@@ -13,6 +13,7 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getAllCategoryAPI,
+  getAllClassifylv2API,
   getDataProductByIdAPI,
   getProductOrderAPI,
   postEditProductAPI,
@@ -32,6 +33,7 @@ function EditProducts() {
   const { id } = useParams();
 
   const [categories, setCategories] = useState([]);
+  const [classifys, setClassifys] = useState([]);
   const [name, setName] = useState();
   const [rows, setRows] = useState([{ key: Date.now() }]);
   const [hasRules, setHasRules] = useState(null);
@@ -103,6 +105,15 @@ function EditProducts() {
         console.error("Error fetching categories:", error);
       }
     };
+    const fetchClassify = async () => {
+      try {
+        const response = await getAllClassifylv2API(token);
+        setClassifys(response.data.data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchClassify();
     fetchCategories();
   }, [token]);
 
@@ -256,7 +267,13 @@ function EditProducts() {
               </Col>
             </Row>
             <Form.Item name="product_cate_lv2" label="Phân loại cấp 2">
-              <Input placeholder="Nhập phân loại cấp 2" />
+              <Select placeholder="Chọn phân loại cấp 2">
+                {classifys.map((classify) => (
+                  <Option key={classify.id} value={classify.title}>
+                    {classify.title}
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
           </Col>
           <Col

@@ -11,7 +11,11 @@ import {
   Col,
 } from "antd";
 import { Link, useNavigate } from "react-router-dom";
-import { getAllCategoryAPI, postAddProductAPI } from "../../apis/handleDataAPI";
+import {
+  getAllCategoryAPI,
+  getAllClassifylv2API,
+  postAddProductAPI,
+} from "../../apis/handleDataAPI";
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -25,6 +29,7 @@ function AddProducts() {
   const navigate = useNavigate();
   const token = localStorage.getItem("authToken");
   const [categories, setCategories] = useState([]);
+  const [classifys, setClassifys] = useState([]);
   const [rows, setRows] = useState([{ key: Date.now() }]);
   const [hasRules, setHasRules] = useState(null); // Trạng thái ban đầu là null (chưa chọn)
 
@@ -40,6 +45,15 @@ function AddProducts() {
         console.error("Error fetching categories:", error);
       }
     };
+    const fetchClassify = async () => {
+      try {
+        const response = await getAllClassifylv2API(token);
+        setClassifys(response.data.data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchClassify();
     fetchCategories();
   }, [token]);
 
@@ -168,7 +182,13 @@ function AddProducts() {
               </Col>
             </Row>
             <Form.Item name="product_cate_lv2" label="Phân loại cấp 2">
-              <Input placeholder="Nhập phân loại cấp 2" />
+              <Select placeholder="Chọn phân loại cấp 2">
+                {classifys.map((classify) => (
+                  <Option key={classify.id} value={classify.title}>
+                    {classify.title}
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
           </Col>
           <Col

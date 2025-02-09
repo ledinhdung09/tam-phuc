@@ -18,6 +18,8 @@ const END_POINT = {
 
   CATEGORY: "cate/categories.php",
 
+  CLASSIFY_LV2: "classifylv2/classifylv2.php",
+
   ADD_STAFF: "register.php",
   ALL_STAFF: "get_all_accounts.php",
   STAFF_BY_ID: "get_account_by_id.php",
@@ -315,6 +317,38 @@ export const postUpdateCategoryAPI = (data) => {
     session_token: data.session_token,
     id: data.id,
     category_name: data.category_name,
+    description: data.description,
+  });
+};
+
+export const getAllClassifylv2API = (session_token) => {
+  return axiosClient.get(
+    `${END_POINT.CLASSIFY_LV2}?session_token=${session_token}`
+  );
+};
+
+export const postAddClassifylv2API = (data) => {
+  return axiosClient.post(END_POINT.CLASSIFY_LV2, {
+    session_token: data.session_token,
+    title: data.title,
+    description: data.description,
+  });
+};
+
+export const deleteClassifylv2API = (data) => {
+  return axiosClient.delete(END_POINT.CLASSIFY_LV2, {
+    data: {
+      session_token: data.session_token,
+      id: data.id,
+    },
+  });
+};
+
+export const postUpdateClassifylv2API = (data) => {
+  return axiosClient.put(END_POINT.CLASSIFY_LV2, {
+    session_token: data.session_token,
+    id: data.id,
+    title: data.title,
     description: data.description,
   });
 };

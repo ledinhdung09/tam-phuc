@@ -1,6 +1,7 @@
 import { Form, Layout, Tabs, theme } from "antd";
 import Staff from "./Staff";
 import Category from "./Category";
+import ClassifyLv2 from "./ClassifyLv2";
 
 const { Content } = Layout;
 
@@ -36,6 +37,11 @@ function Settings() {
               label: "Quản lý nhóm sản phẩm",
               key: "2",
               children: <Category />, // Nội dung của Tab
+            },
+            {
+              label: "Quản lý phân loại cấp 2",
+              key: "3",
+              children: <ClassifyLv2 />, // Nội dung của Tab
             },
           ]}
         />

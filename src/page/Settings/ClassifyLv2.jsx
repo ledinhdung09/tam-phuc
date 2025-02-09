@@ -7,12 +7,16 @@ import {
   postAddCategoryAPI,
   postUpdateCategoryAPI, // API để cập nhật loại sản phẩm
   deleteCategoryAPI,
+  getAllClassifylv2API,
+  postAddClassifylv2API,
+  postUpdateClassifylv2API,
+  deleteClassifylv2API,
 } from "../../apis/handleDataAPI";
 
 const { Title } = Typography;
 const { confirm } = Modal;
 
-function Category() {
+function ClassifyLv2() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm(); // Khởi tạo instance của form
   const [isFormValid, setIsFormValid] = useState(false); // Trạng thái hợp lệ của form
@@ -23,14 +27,15 @@ function Category() {
   const [currentPage, setCurrentPage] = useState(1); // Quản lý trang hiện tại
   const [pageSize, setPageSize] = useState(15); // Quản lý số lượng bản ghi mỗi trang
   const [total, setTotal] = useState(0); // Tổng số bản ghi
+
   const fetchData = async () => {
     try {
-      const response = await getAllCategoryAPI(token);
+      const response = await getAllClassifylv2API(token);
       console.log(response);
       if (response.data.data && response.data.data.length > 0) {
         const transformedData = response.data.data.map((item) => ({
           key: item.id,
-          id: item.category_name,
+          id: item.title,
           descriptions: item.description,
         }));
         setData(transformedData);
@@ -52,18 +57,18 @@ function Category() {
 
       if (selectedCategory) {
         // Gọi API cập nhật thông tin loại sản phẩm
-        await postUpdateCategoryAPI({
+        await postUpdateClassifylv2API({
           session_token: token,
           id: selectedCategory.key, // ID sản phẩm cần sửa
-          category_name: values.name_category,
+          title: values.title,
           description: values.description_category,
         });
       } else {
         // Gọi API thêm mới loại sản phẩm
         console.log("them");
-        const response = await postAddCategoryAPI({
+        const response = await postAddClassifylv2API({
           session_token: token,
-          category_name: values.name_category,
+          title: values.title,
           description: values.description_category,
         });
         console.log(response);
@@ -96,7 +101,7 @@ function Category() {
 
     // Điền dữ liệu vào form
     form.setFieldsValue({
-      name_category: record.id,
+      title: record.id,
       description_category: record.descriptions,
     });
   };
@@ -105,7 +110,7 @@ function Category() {
     try {
       // Gọi API xóa loại sản phẩm
       console.log(record.key);
-      const response = await deleteCategoryAPI({
+      const response = await deleteClassifylv2API({
         session_token: token,
         id: record.key,
       });
@@ -113,13 +118,13 @@ function Category() {
       fetchData(); // Cập nhật lại danh sách sau khi xóa
     } catch (error) {
       console.error("Error deleting category:", error);
-      alert("Xóa nhóm sản phẩm thất bại. Vui lòng thử lại.");
+      alert("Xóa phân loại cấp 2 thất bại. Vui lòng thử lại.");
     }
   };
   const showConfirm = (record) => {
     confirm({
-      title: "Bạn có chắc chắn muốn xóa nhóm sản phẩm này?",
-      content: `Tên nhóm sản phẩm: ${record.id}`,
+      title: "Bạn có chắc chắn muốn xóa phân loại cấp 2 này?",
+      content: `Tên phân loại cấp 2: ${record.id}`,
       okText: "Xóa",
       okType: "danger",
       cancelText: "Hủy",
@@ -134,7 +139,7 @@ function Category() {
 
   const columns = [
     {
-      title: "Tên nhóm sản phẩm",
+      title: "Tên phân loại cấp 2",
       dataIndex: "id",
       key: "id",
       width: 100, // Đặt độ rộng cột (px)
@@ -148,7 +153,7 @@ function Category() {
       ),
     },
     {
-      title: "Mô tả loại sản phẩm",
+      title: "Mô tả phân loại cấp 2",
       dataIndex: "descriptions",
       key: "descriptions",
       width: 300, // Đặt độ rộng cột
@@ -185,7 +190,7 @@ function Category() {
         >
           <Col flex={1}>
             <Title style={{ margin: 0 }} level={3}>
-              Quản lý nhóm sản phẩm
+              Quản lý phân loại cấp 2
             </Title>
           </Col>
           <Col
@@ -205,12 +210,12 @@ function Category() {
               }}
               onChange={handleFormChange}
             >
-              Thêm nhóm sản phẩm
+              Thêm phân loại cấp 2
             </Button>
           </Col>
           <Modal
             title={
-              selectedCategory ? "Sửa nhóm sản phẩm" : "Thêm nhóm sản phẩm"
+              selectedCategory ? "Sửa phân loại cấp 2" : "Thêm phân loại cấp 2"
             }
             open={isModalOpen}
             onOk={handleOk}
@@ -221,16 +226,16 @@ function Category() {
               <Row gutter={16}>
                 <Col flex={1}>
                   <Form.Item
-                    name="name_category"
-                    label="Tên nhóm sản phẩm"
+                    name="title"
+                    label="Tên phân loại cấp 2"
                     rules={[
                       {
                         required: true,
-                        message: "Vui lòng nhập tên nhóm sản phẩm",
+                        message: "Vui lòng nhập tên phân loại cấp 2",
                       },
                     ]}
                   >
-                    <Input placeholder="Nhập tên nhóm sản phẩm" />
+                    <Input placeholder="Nhập tên phân loại cấp 2" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -264,4 +269,4 @@ function Category() {
   );
 }
 
-export default Category;
+export default ClassifyLv2;
